@@ -3,7 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Package, KanbanSquare,
   TrendingUp, Calculator, Settings, Store, Receipt, LogOut,
-  ChevronRight, Menu, Moon, Sun, Keyboard, CalendarDays,
+  ChevronsLeft, Menu, Moon, Sun, Keyboard, CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ToastProvider, useToast } from './Toast';
@@ -410,17 +410,34 @@ export default function Layout() {
       <aside className={`hidden md:flex flex-col flex-shrink-0 bg-[#0d1117] relative transition-all duration-300 ease-in-out overflow-hidden ${collapsed ? 'w-[64px]' : 'w-[260px]'}`}>
 
         {/* Header */}
-        <div className={`flex items-center border-b border-white/[0.06] h-[60px] flex-shrink-0 transition-all duration-300 ${collapsed ? 'justify-center px-0' : 'px-5 gap-3'}`}>
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10">
-            <Store size={15} className="text-white" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 overflow-hidden">
+        {collapsed ? (
+          <button
+            onClick={toggle}
+            title="Expandir sidebar (⌘B)"
+            className="flex items-center justify-center h-[60px] border-b border-white/[0.06] flex-shrink-0 w-full hover:bg-white/[0.04] transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10 group-hover:scale-95 transition-transform duration-150">
+              <Store size={15} className="text-white" />
+            </div>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3 px-4 h-[60px] border-b border-white/[0.06] flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10">
+              <Store size={15} className="text-white" />
+            </div>
+            <div className="min-w-0 overflow-hidden flex-1">
               <p className="text-white font-semibold text-sm leading-tight tracking-tight whitespace-nowrap">Gestão Shopee</p>
               <p className="text-slate-500 text-[11px] whitespace-nowrap truncate mt-0.5">Painel do vendedor</p>
             </div>
-          )}
-        </div>
+            <button
+              onClick={toggle}
+              title="Recolher sidebar (⌘B)"
+              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-200 hover:bg-white/[0.06] transition-all duration-150 flex-shrink-0"
+            >
+              <ChevronsLeft size={15} />
+            </button>
+          </div>
+        )}
 
         <SidebarNav collapsed={collapsed} />
 
@@ -433,14 +450,6 @@ export default function Layout() {
           onSignOut={signOut}
         />
 
-        {/* Collapse toggle */}
-        <button
-          onClick={toggle}
-          title={collapsed ? 'Expandir (⌘B)' : 'Recolher (⌘B)'}
-          className="absolute right-0 top-[70px] translate-x-1/2 w-5 h-5 bg-[#1c2230] hover:bg-shopee-500 border border-white/10 hover:border-shopee-500/50 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg z-20 group/btn"
-        >
-          <ChevronRight size={10} className={`text-slate-400 group-hover/btn:text-white transition-transform duration-300 ${collapsed ? 'rotate-0' : 'rotate-180'}`} />
-        </button>
       </aside>
 
       {/* Main */}
