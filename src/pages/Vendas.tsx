@@ -2,7 +2,6 @@ import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import {
   Upload, Search, Plus, Trash2, X, Download, Filter, Columns,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { useStore } from '../store';
 import { fmt } from '../utils/calculations';
 import type { Pedido, StatusPedido } from '../types';
@@ -533,6 +532,7 @@ export default function Vendas() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    const XLSX = await import('xlsx');
     const buf  = await file.arrayBuffer();
     const wb   = XLSX.read(buf);
     const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -577,7 +577,8 @@ export default function Vendas() {
     setPendingImport(null);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const XLSX = await import('xlsx');
     const data = filtrados.map((p) => ({
       Data:               p.data,
       'Nº Pedido':        p.numeroPedido,

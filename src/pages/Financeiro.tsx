@@ -6,7 +6,6 @@ import {
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import * as XLSX from 'xlsx';
 import { useStore } from '../store';
 import { fmt, fmtPct } from '../utils/calculations';
 import { exportarRelatorioMensal } from '../utils/exportRelatorio';
@@ -366,8 +365,8 @@ export default function Financeiro() {
     [historico]
   );
 
-  const handleExport = () => {
-    exportarRelatorioMensal(mesDRE, pedidos, despesas, produtos, dreLive, mesLabelStr);
+  const handleExport = async () => {
+    await exportarRelatorioMensal(mesDRE, pedidos, despesas, produtos, dreLive, mesLabelStr);
   };
 
   const jaFechado = historico.some((h) => h.mesAno === mesDRE);
@@ -384,7 +383,8 @@ export default function Financeiro() {
   };
 
   // Exportar histórico completo (melhoria 4)
-  const exportHistorico = () => {
+  const exportHistorico = async () => {
+    const XLSX = await import('xlsx');
     const data = historicoOrdenado.map((h) => ({
       'Mês/Ano':          h.mesAno,
       'Fat. Bruto (R$)':  h.faturamentoBruto,

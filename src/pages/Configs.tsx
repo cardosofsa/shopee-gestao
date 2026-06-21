@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, RotateCcw, Tag, CheckCircle2, Download, Wifi, WifiOff } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import { fmt } from '../utils/calculations';
@@ -54,7 +53,8 @@ export default function Configs() {
   const pedidos    = useStore((s) => s.pedidos);
   const despesas   = useStore((s) => s.despesas);
 
-  const exportBackup = () => {
+  const exportBackup = async () => {
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
@@ -80,7 +80,8 @@ export default function Configs() {
     XLSX.writeFile(wb, `backup-shopee-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  const exportSkus = () => {
+  const exportSkus = async () => {
+    const XLSX = await import('xlsx');
     const ws = XLSX.utils.aoa_to_sheet([
       ['SKU', 'Nome', 'Categoria', 'Loja', 'Custo Unit. (R$)', 'Est. Segurança', 'Est. Atual', 'Ativo'],
       ...produtos.map((p) => [p.sku, p.nome, p.categoria, p.loja, p.custoUnitario, p.estoqueSeguranca, p.estoqueAtual, p.ativo ? 'Sim' : 'Não']),

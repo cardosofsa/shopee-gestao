@@ -263,6 +263,7 @@ export default function Dashboard() {
   const produtosAll    = useStore((s) => s.produtos);
   const despesas       = useStore((s) => s.despesas);
   const tarefas        = useStore((s) => s.tarefas);
+  const historico      = useStore((s) => s.historico);
   const lojaFiltro     = useStore((s) => s.lojaFiltro);
   const addCompra      = useStore((s) => s.addCompra);
   const addPedido      = useStore((s) => s.addPedido);
@@ -299,6 +300,18 @@ export default function Dashboard() {
   const despesasDoMes = useMemo(
     () => despesas.filter((d) => d.data.startsWith(mesFiltro)).reduce((s, d) => s + d.valor, 0),
     [despesas, mesFiltro]
+  );
+
+  const chartAnual = useMemo(() =>
+    [...historico]
+      .sort((a, b) => a.mesAno.localeCompare(b.mesAno))
+      .slice(-12)
+      .map((h) => ({
+        name: new Date(h.mesAno + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }),
+        faturamento: h.faturamentoBruto,
+        lucro: h.lucroLiquido,
+      })),
+    [historico],
   );
   const limite30d = useMemo(() => new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), []);
 
@@ -515,6 +528,43 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Gráfico Anual — historico_mensal */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-slate-700 dark:text-slate-200 font-semibold text-sm">
+            Visão Anual — Faturamento &amp; Lucro Líquido
+          </h2>
+          <Link to="/financeiro" className="text-xs text-shopee-500 hover:text-shopee-600 font-medium flex items-center gap-1">
+            Fechar mês <ArrowRight size={12} />
+          </Link>
+        </div>
+        {chartAnual.length === 0 ? (
+          <div className="h-40 flex flex-col items-center justify-center gap-2">
+            <p className="text-slate-400 dark:text-slate-500 text-sm">Nenhum mês fechado ainda.</p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs">
+              Vá em <Link to="/financeiro" className="text-shopee-500 hover:underline">Financeiro</Link> e clique em &ldquo;Lançar manualmente&rdquo; para registrar o histórico mensal.
+            </p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={chartAnual} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(value, name) => [
+                  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value)),
+                  name === 'faturamento' ? 'Faturamento' : 'Lucro Líquido',
+                ]}
+              />
+              <Legend formatter={(v) => v === 'faturamento' ? 'Faturamento' : 'Lucro Líquido'} wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="faturamento" fill="#f97316" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="lucro"       fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Ranking de Produtos */}

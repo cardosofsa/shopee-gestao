@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search, Download, CalendarDays, X, Pencil, Trash2 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import type { Compra } from '../../types';
 import { useStore } from '../../store';
 import { fmt } from '../../utils/calculations';
@@ -36,7 +35,8 @@ export function ComprasTab({ onEdit, onDelete }: ComprasTabProps) {
 
   const compPaginados = compFiltered.slice((compPage - 1) * compPageSize, compPage * compPageSize);
 
-  const exportCompras = () => {
+  const exportCompras = async () => {
+    const XLSX = await import('xlsx');
     const data = compFiltered.map((c) => ({
       Data: c.data, SKU: c.sku, Produto: c.produto,
       'Qtd.': c.quantidadeEntrada, 'Custo Unit. (R$)': c.custoUnitario,

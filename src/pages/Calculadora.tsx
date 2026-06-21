@@ -4,7 +4,6 @@ import {
   Trash2, Copy, Check, RotateCcw, ChevronDown, ChevronUp,
   Info, Tag,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { fmt, fmtPct } from '../utils/calculations';
 import { useStore } from '../store';
 import type { PrecificacaoSalva } from '../types';
@@ -314,8 +313,9 @@ export default function Calculadora() {
     toast('Precificação carregada!', 'info');
   };
 
-  const exportXLSX = () => {
+  const exportXLSX = async () => {
     if (!calc) return;
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const ws1 = XLSX.utils.aoa_to_sheet([
       ['Parâmetros', ''],
@@ -348,8 +348,9 @@ export default function Calculadora() {
     XLSX.writeFile(wb, 'precificacao.xlsx');
   };
 
-  const exportSalvasXLSX = () => {
+  const exportSalvasXLSX = async () => {
     if (!precificacoesSalvas.length) return;
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
       ['Nome', 'SKU', 'Modo', 'Custo', 'Embalagem', 'Frete', 'Alíquota DAS (%)', 'Ads (%)', 'Margem Desejada (%)', 'Preço Ideal', 'Margem Real (%)', 'Lucro', 'Salvo em'],

@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import type { Pedido, Despesa, Produto } from '../types';
 import type { DREResult } from '../domain/dre';
 import { getRankingProdutos } from './calculations';
@@ -11,14 +10,15 @@ function pct(v: number) {
   return `${v.toFixed(1)}%`;
 }
 
-export function exportarRelatorioMensal(
+export async function exportarRelatorioMensal(
   mesAno: string,
   pedidos: Pedido[],
   despesas: Despesa[],
   produtos: Produto[],
   dre: DREResult,
   mesLabel: string,
-) {
+): Promise<void> {
+  const XLSX = await import('xlsx');
   const wb = XLSX.utils.book_new();
   const f = dre.faturamentoBruto;
 
