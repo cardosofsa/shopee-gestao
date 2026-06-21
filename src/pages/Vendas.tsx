@@ -333,6 +333,8 @@ export default function Vendas() {
   const [editingPedido, setEditingPedido] = useState<Pedido | null>(null);
   const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set());
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pendingImport, setPendingImport] = useState<{
     novos: Pedido[]; duplicados: number;
     formato: 'shopee_nativo' | 'upseller' | 'generico';
@@ -406,6 +408,7 @@ export default function Vendas() {
     const q = search.toLowerCase();
     return pedidos
       .filter((p) => {
+        if (hiddenIds.has(p.id)) return false;
         if (filters.dateFrom && p.data < filters.dateFrom) return false;
         if (filters.dateTo   && p.data > filters.dateTo)   return false;
         if (filters.statuses.size > 0 && !filters.statuses.has(p.status)) return false;
@@ -425,7 +428,7 @@ export default function Vendas() {
           ? String(va).localeCompare(String(vb))
           : String(vb).localeCompare(String(va));
       });
-  }, [pedidos, search, filters, sortCol, sortDir]);
+  }, [pedidos, search, filters, sortCol, sortDir, hiddenIds]);
 
   const comparativo = useMemo(() => {
     if (!filters.dateFrom || !filters.dateTo) return null;
@@ -497,10 +500,25 @@ export default function Vendas() {
 
   const handleBulkDelete = () => {
     const toDelete = [...selectedIds];
-    deletePedidos(toDelete);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setHiddenIds((prev) => new Set([...prev, ...toDelete]));
     setSelectedIds(new Set());
     setShowConfirmDelete(false);
-    toast(`${toDelete.length} pedido(s) excluído(s).`, 'success');
+    undoTimerRef.current = setTimeout(() => {
+      deletePedidos(toDelete);
+      setHiddenIds((prev) => { const n = new Set(prev); toDelete.forEach((id) => n.delete(id)); return n; });
+      undoTimerRef.current = null;
+    }, 5000);
+    toast(`${toDelete.length} pedido(s) excluído(s).`, 'success', {
+      duration: 5000,
+      action: {
+        label: 'Desfazer',
+        onClick: () => {
+          if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null; }
+          setHiddenIds((prev) => { const n = new Set(prev); toDelete.forEach((id) => n.delete(id)); return n; });
+        },
+      },
+    });
   };
 
   const handleBulkStatus = (status: StatusPedido) => {

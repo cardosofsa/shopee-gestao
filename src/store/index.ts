@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Produto, Pedido, Compra, AjusteEstoque, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa, PrecificacaoSalva, CalculadoraDraft } from '../types';
-import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, dbAjustes, loadUserData, seedUserData } from '../lib/db';
-import { withRetry, notifySyncError } from '../lib/sync';
+import type { Produto, Pedido, Compra, AjusteEstoque, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa, PrecificacaoSalva, CalculadoraDraft, Subscription, Organization, OrgMember } from '../types';
+import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, dbAjustes, dbSubscriptions, dbOrganizations, dbOrgMembers, loadUserData, seedUserData } from '../lib/db';
+import { withRetry, notifySyncError, notifyLimitReached } from '../lib/sync';
 
 function syncFail(label: string) {
   return (err: unknown) => {
@@ -136,6 +136,17 @@ interface AppState {
   lojaFiltro: string | null;
   setLojaFiltro: (loja: string | null) => void;
 
+  // Plano / Subscription
+  subscription: Subscription | null;
+  setSubscription: (s: Subscription | null) => void;
+
+  // CoWork
+  organization: Organization | null;
+  orgMembers: OrgMember[];
+  setOrganization: (org: Organization | null) => void;
+  setOrgMembers: (members: OrgMember[]) => void;
+  loadOrganization: (userId: string) => Promise<void>;
+
   // Seed
   resetToSeed: () => void;
 
@@ -162,6 +173,9 @@ export const useStore = create<AppState>()(
       calculadoraDraft: null,
       onboardingCompleted: false,
       lojaFiltro: null,
+      subscription: null,
+      organization: null,
+      orgMembers: [],
       darkMode: false,
 
       setUserId: (id) => set({ userId: id }),
@@ -179,7 +193,18 @@ export const useStore = create<AppState>()(
 
       loadAndHydrate: async (userId) => {
         set({ userId, isHydrated: false });
-        const data = await loadUserData(userId);
+        const [data, subscription, orgOwned, orgMember] = await Promise.all([
+          loadUserData(userId),
+          dbSubscriptions.getOrDefault(userId),
+          dbOrganizations.getOwned(userId),
+          dbOrganizations.getMembership(userId),
+        ]);
+        const organization = orgOwned ?? orgMember;
+        let orgMembers: OrgMember[] = [];
+        if (organization) {
+          orgMembers = await dbOrgMembers.getByOrg(organization.id).catch(() => []);
+        }
+        set({ subscription, organization, orgMembers });
         const isNew = data.produtos.length === 0;
         if (isNew) {
           await seedUserData(userId, {
@@ -198,6 +223,19 @@ export const useStore = create<AppState>()(
       },
 
       addPedido: (p) => {
+        const sub = get().subscription;
+        if (sub?.plan.limitePedidosMes) {
+          const mes = new Date().toISOString().slice(0, 7);
+          const count = get().pedidos.filter((x) => x.data.startsWith(mes)).length;
+          const limit = sub.plan.limitePedidosMes;
+          if (count >= limit) {
+            notifyLimitReached(`Limite de ${limit} pedidos/mês atingido. Faça upgrade para continuar.`, 'error', true);
+            return;
+          }
+          if (count >= Math.floor(limit * 0.8)) {
+            notifyLimitReached(`${count} de ${limit} pedidos usados este mês (${Math.round((count/limit)*100)}%). Considere fazer upgrade.`, 'warning', true);
+          }
+        }
         const prev = get().pedidos;
         set((s) => ({ pedidos: [p, ...s.pedidos] }));
         const uid = get().userId;
@@ -296,6 +334,18 @@ export const useStore = create<AppState>()(
       },
 
       addProduto: (p) => {
+        const sub = get().subscription;
+        if (sub?.plan.limiteSKUs) {
+          const count = get().produtos.length;
+          const limit = sub.plan.limiteSKUs;
+          if (count >= limit) {
+            notifyLimitReached(`Limite de ${limit} SKUs atingido. Faça upgrade para adicionar mais produtos.`, 'error', true);
+            return;
+          }
+          if (count >= Math.floor(limit * 0.8)) {
+            notifyLimitReached(`${count} de ${limit} SKUs cadastrados (${Math.round((count/limit)*100)}%). Considere fazer upgrade.`, 'warning', true);
+          }
+        }
         set((s) => ({ produtos: [...s.produtos, p] }));
         const uid = get().userId;
         if (uid) withRetry(() => dbProdutos.upsert(p, uid), 'produto').catch(syncFail('produto'));
@@ -477,6 +527,21 @@ export const useStore = create<AppState>()(
 
       setLojaFiltro: (loja) => set({ lojaFiltro: loja }),
 
+      setSubscription: (s) => set({ subscription: s }),
+
+      setOrganization: (org) => set({ organization: org }),
+      setOrgMembers: (members) => set({ orgMembers: members }),
+      loadOrganization: async (userId) => {
+        const [owned, member] = await Promise.all([
+          dbOrganizations.getOwned(userId),
+          dbOrganizations.getMembership(userId),
+        ]);
+        const org = owned ?? member;
+        let members: OrgMember[] = [];
+        if (org) members = await dbOrgMembers.getByOrg(org.id).catch(() => []);
+        set({ organization: org, orgMembers: members });
+      },
+
       resetToSeed: () =>
         set({
           produtos: PRODUTOS_SEED,
@@ -503,6 +568,9 @@ export const useStore = create<AppState>()(
           userId: null,
           isHydrated: false,
           lojaFiltro: null,
+          subscription: null,
+          organization: null,
+          orgMembers: [],
         }),
     }),
     {

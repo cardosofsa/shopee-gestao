@@ -57,6 +57,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
   const deleteTarefa  = useStore((s) => s.deleteTarefa);
   const moveTarefa    = useStore((s) => s.moveTarefa);
   const updateTarefa  = useStore((s) => s.updateTarefa);
+  const toast         = useToast();
 
   const [editing,        setEditing]        = useState(false);
   const [editTitle,      setEditTitle]      = useState(tarefa.titulo);
@@ -123,7 +124,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
               onClick={() => setEditing(true)}>
               {tarefa.titulo}
             </p>
-            <button onClick={() => deleteTarefa(tarefa.id)}
+            <button onClick={() => { deleteTarefa(tarefa.id); toast('Tarefa excluída.', 'info'); }}
               className="text-slate-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0 mt-0.5">
               <Trash2 size={13} />
             </button>
@@ -167,6 +168,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
 
 function AddCard({ coluna, onDone }: { coluna: ColunaTarefa; onDone: () => void }) {
   const addTarefa = useStore((s) => s.addTarefa);
+  const toast     = useToast();
   const [titulo,        setTitulo]        = useState('');
   const [descricao,     setDescricao]     = useState('');
   const [prioridade,    setPrioridade]    = useState<PrioridadeTarefa>('media');
@@ -180,6 +182,7 @@ function AddCard({ coluna, onDone }: { coluna: ColunaTarefa; onDone: () => void 
       dataVencimento: dataVencimento || undefined,
       criadoEm: new Date().toISOString(),
     });
+    toast('Tarefa criada.', 'success');
     onDone();
   };
 

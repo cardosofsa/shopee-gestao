@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2, RotateCcw, Tag, CheckCircle2, Download, Wifi, WifiOff } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, RotateCcw, Tag, CheckCircle2, Download, Wifi, WifiOff, Zap, Crown, Users, CalendarCheck, Link2, Link2Off } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import { fmt } from '../utils/calculations';
 import type { Produto, Configuracoes } from '../types';
 import { useToast } from '../components/Toast';
+import { connectGoogleCalendar, getCalendarToken, downloadICS } from '../lib/gcal';
 
 export default function Configs() {
   const toast = useToast();
@@ -31,9 +32,11 @@ export default function Configs() {
     .reduce((s, h) => s + h.faturamentoBruto, 0);
   const [showAdd, setShowAdd] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [deleteSkuTarget, setDeleteSkuTarget] = useState<string | null>(null);
   const [newCategoria, setNewCategoria] = useState('');
   const [newCategoriaProd, setNewCategoriaProd] = useState('');
   const [syncStatus, setSyncStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [gcalToken,  setGcalToken]  = useState<string | null | 'checking'>('checking');
 
   useEffect(() => {
     (async () => {
@@ -45,13 +48,24 @@ export default function Configs() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    getCalendarToken().then(setGcalToken);
+  }, []);
   const [newProd, setNewProd] = useState<Partial<Produto>>({
     sku: '', nome: '', categoria: 'Perfumaria', loja: 'Cardoso e-Shop',
     custoUnitario: 0, estoqueSeguranca: 10, estoqueAtual: 0, ativo: true,
   });
 
+  const subscription = useStore((s) => s.subscription);
+  const tarefas    = useStore((s) => s.tarefas);
   const pedidos    = useStore((s) => s.pedidos);
   const despesas   = useStore((s) => s.despesas);
+
+  const pedidosMes = useMemo(() => {
+    const mes = new Date().toISOString().slice(0, 7);
+    return pedidos.filter((p) => p.data.startsWith(mes)).length;
+  }, [pedidos]);
 
   const exportBackup = async () => {
     const XLSX = await import('xlsx');
@@ -106,6 +120,7 @@ export default function Configs() {
   };
 
   return (
+    <>
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -122,6 +137,112 @@ export default function Configs() {
            syncStatus === 'offline' ? 'Supabase offline' : 'Verificando…'}
         </div>
       </div>
+
+      {/* Meu Plano */}
+      {(() => {
+        const plan = subscription?.plan;
+        const planId = plan?.id ?? 'free';
+        const planNome = plan?.nome ?? 'Free';
+        const limPedidos = plan?.limitePedidosMes ?? 100;
+        const limSKUs = plan?.limiteSKUs ?? 20;
+        const pctPedidos = limPedidos ? Math.min(100, Math.round((pedidosMes / limPedidos) * 100)) : 0;
+        const pctSKUs = limSKUs ? Math.min(100, Math.round((produtos.length / limSKUs) * 100)) : 0;
+
+        const PLAN_STYLES: Record<string, { badge: string; icon: React.ReactNode }> = {
+          free:            { badge: 'bg-slate-100 text-slate-700 border-slate-200',           icon: <Zap size={14} /> },
+          starter:         { badge: 'bg-sky-50 text-sky-700 border-sky-200',                  icon: <Zap size={14} /> },
+          pro:             { badge: 'bg-shopee-50 text-shopee-700 border-shopee-200',          icon: <Crown size={14} /> },
+          max:             { badge: 'bg-amber-50 text-amber-700 border-amber-200',             icon: <Crown size={14} /> },
+          cowork_starter:  { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',       icon: <Users size={14} /> },
+          cowork_titanium: { badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',          icon: <Users size={14} /> },
+        };
+        const style = PLAN_STYLES[planId] ?? PLAN_STYLES.free;
+
+        const barColor = (pct: number) =>
+          pct >= 90 ? 'bg-red-400' : pct >= 70 ? 'bg-amber-400' : 'bg-shopee-500';
+
+        const FEATURE_LABELS: { key: keyof NonNullable<typeof plan>['features']; label: string }[] = [
+          { key: 'dre',          label: 'DRE / Financeiro completo' },
+          { key: 'importAuto',   label: 'Import automático' },
+          { key: 'exportXlsx',   label: 'Export XLSX' },
+          { key: 'kanban',       label: 'Kanban de tarefas' },
+          { key: 'calculadora',  label: 'Calculadora de preços' },
+          { key: 'relatoriosPdf',label: 'Relatórios PDF' },
+          { key: 'multiLoja',    label: 'Multi-loja' },
+          { key: 'api',          label: 'Acesso via API' },
+        ];
+
+        return (
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Meu Plano</h2>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${style.badge}`}>
+                  {style.icon} {planNome}
+                </span>
+                {subscription?.status === 'trialing' && (
+                  <span className="text-xs text-amber-600 font-medium">Trial ativo</span>
+                )}
+              </div>
+              <button className="btn-secondary text-xs opacity-50 cursor-not-allowed" disabled title="Em breve">
+                Ver planos
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">Pedidos este mês</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {pedidosMes.toLocaleString('pt-BR')}
+                    {limPedidos ? ` / ${limPedidos.toLocaleString('pt-BR')}` : ' / ∞'}
+                  </span>
+                </div>
+                {limPedidos && (
+                  <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${barColor(pctPedidos)}`} style={{ width: `${pctPedidos}%` }} />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">SKUs cadastrados</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {produtos.length}
+                    {limSKUs ? ` / ${limSKUs}` : ' / ∞'}
+                  </span>
+                </div>
+                {limSKUs && (
+                  <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${barColor(pctSKUs)}`} style={{ width: `${pctSKUs}%` }} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {plan?.features && (
+              <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-2 font-medium">Features incluídas</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  {FEATURE_LABELS.map(({ key, label }) => {
+                    const enabled = plan.features[key as keyof typeof plan.features];
+                    return (
+                      <span key={key} className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                        enabled
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                          : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-600 line-through'
+                      }`}>
+                        <CheckCircle2 size={11} className={enabled ? 'text-emerald-500' : 'text-slate-300'} />
+                        {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Premissas */}
       <div className="card p-5 space-y-4">
@@ -385,7 +506,7 @@ export default function Configs() {
                     </button>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => { if (confirm(`Excluir ${p.sku}?`)) deleteProduto(p.sku); }}
+                    <button onClick={() => setDeleteSkuTarget(p.sku)}
                       className="text-slate-200 dark:text-slate-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
                       <Trash2 size={14} />
                     </button>
@@ -497,6 +618,66 @@ export default function Configs() {
         </div>
       </div>
 
+      {/* Integrações */}
+      <div className="card p-5 space-y-4">
+        <h2 className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Integrações</h2>
+
+        {/* Google Calendar */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+              <CalendarCheck size={18} className="text-slate-500" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Google Calendar</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {gcalToken === 'checking'
+                  ? 'Verificando…'
+                  : gcalToken
+                    ? 'Conectado — tarefas com data de vencimento podem ser sincronizadas'
+                    : 'Não conectado'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {gcalToken && gcalToken !== 'checking' && (
+              <button
+                className="btn-secondary text-xs"
+                onClick={() => {
+                  const comData = tarefas.filter((t) => !!t.dataVencimento);
+                  if (comData.length === 0) { toast('Nenhuma tarefa com data para exportar.', 'warning'); return; }
+                  downloadICS(tarefas);
+                  toast(`${comData.length} tarefa(s) exportadas como .ICS.`, 'success');
+                }}
+              >
+                <Download size={13} /> Baixar .ICS
+              </button>
+            )}
+            {gcalToken && gcalToken !== 'checking' ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                <Link2 size={13} /> Conectado
+              </div>
+            ) : (
+              <button
+                className="btn-secondary text-xs"
+                title="Requer Google OAuth configurado no Supabase Dashboard (Settings → Auth → Providers → Google → Additional scopes: https://www.googleapis.com/auth/calendar)"
+                onClick={async () => {
+                  const { error } = await connectGoogleCalendar();
+                  if (error) toast(`Erro ao conectar: ${error}`, 'error');
+                }}
+              >
+                <Link2Off size={13} /> Conectar
+              </button>
+            )}
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700 pt-3">
+          Mais integrações em breve: UpSeller, Shopee API, WhatsApp, Stripe.
+        </p>
+      </div>
+
       {/* Danger Zone */}
       <div className="card p-5 border border-red-100 dark:border-red-900/50">
         <h2 className="text-red-600 font-semibold text-sm mb-1">Zona de Perigo</h2>
@@ -531,5 +712,30 @@ export default function Configs() {
         )}
       </div>
     </div>
+
+    {deleteSkuTarget && (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm">
+          <div className="px-6 py-5 text-center">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Trash2 size={20} className="text-red-500" />
+            </div>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Excluir SKU?</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
+              <span className="font-mono font-medium">{deleteSkuTarget}</span> será removido permanentemente.
+            </p>
+          </div>
+          <div className="px-6 pb-5 flex gap-3">
+            <button className="btn-secondary flex-1 justify-center" onClick={() => setDeleteSkuTarget(null)}>Cancelar</button>
+            <button className="btn-danger flex-1 justify-center" onClick={() => {
+              deleteProduto(deleteSkuTarget);
+              toast(`SKU ${deleteSkuTarget} excluído.`, 'info');
+              setDeleteSkuTarget(null);
+            }}>Excluir</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

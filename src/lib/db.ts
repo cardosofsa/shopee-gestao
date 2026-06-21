@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Produto, Pedido, Compra, Despesa, Tarefa, HistoricoMensal, Configuracoes } from '../types';
+import type { Produto, Pedido, Compra, Despesa, Tarefa, HistoricoMensal, Configuracoes, Plan, Subscription, Organization, OrgMember, OrgRole, OrgInvite } from '../types';
 
 // ── Mappers ──────────────────────────────────────────────────
 
@@ -302,6 +302,153 @@ export const dbConfiguracoes = {
   },
   upsert: async (c: Configuracoes, uid: string) => {
     await supabase.from('configuracoes').upsert(toConfiguracoes(c, uid));
+  },
+};
+
+// ── Subscriptions / Planos ───────────────────────────────────
+
+const fromPlan = (r: any): Plan => ({
+  id: r.id,
+  nome: r.nome,
+  limitePedidosMes: r.limite_pedidos_mes ?? null,
+  limiteSKUs: r.limite_skus ?? null,
+  limiteUsuarios: r.limite_usuarios,
+  features: r.features ?? {},
+});
+
+const FREE_PLAN: Plan = {
+  id: 'free', nome: 'Free', limitePedidosMes: 100, limiteSKUs: 20,
+  limiteUsuarios: 1,
+  features: { dre: false, importAuto: false, exportXlsx: false, kanban: true, calculadora: true, relatoriosPdf: false, api: false, multiLoja: false },
+};
+
+export const dbSubscriptions = {
+  get: async (uid: string): Promise<Subscription | null> => {
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('*, plan:plans(*)')
+      .eq('user_id', uid)
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      userId: data.user_id,
+      planId: data.plan_id,
+      plan: fromPlan(data.plan),
+      status: data.status,
+      pedidosMesAtual: data.pedidos_mes_atual,
+      periodoInicio: data.periodo_inicio ?? null,
+      periodoFim: data.periodo_fim ?? null,
+    };
+  },
+
+  getOrDefault: async (uid: string): Promise<Subscription> => {
+    const sub = await dbSubscriptions.get(uid);
+    if (sub) return sub;
+    return {
+      userId: uid, planId: 'free', plan: FREE_PLAN,
+      status: 'active', pedidosMesAtual: 0,
+      periodoInicio: null, periodoFim: null,
+    };
+  },
+};
+
+// ── CoWork: Organizations ─────────────────────────────────────
+
+export const dbOrganizations = {
+  getOwned: async (uid: string): Promise<Organization | null> => {
+    const { data } = await supabase
+      .from('organizations').select('*').eq('owner', uid).maybeSingle();
+    if (!data) return null;
+    return { id: data.id, nome: data.nome, owner: data.owner, createdAt: data.created_at };
+  },
+  getMembership: async (uid: string): Promise<Organization | null> => {
+    const { data } = await supabase
+      .from('org_members')
+      .select('org_id, organizations(id, nome, owner, created_at)')
+      .eq('user_id', uid)
+      .maybeSingle();
+    if (!data?.organizations) return null;
+    const o = data.organizations as any;
+    return { id: o.id, nome: o.nome, owner: o.owner, createdAt: o.created_at };
+  },
+  create: async (nome: string, uid: string): Promise<Organization> => {
+    const { data, error } = await supabase
+      .from('organizations').insert({ nome, owner: uid }).select().single();
+    if (error) throw error;
+    return { id: data.id, nome: data.nome, owner: data.owner, createdAt: data.created_at };
+  },
+  update: async (id: string, nome: string): Promise<void> => {
+    await supabase.from('organizations').update({ nome }).eq('id', id);
+  },
+  delete: async (id: string): Promise<void> => {
+    await supabase.from('organizations').delete().eq('id', id);
+  },
+};
+
+// ── CoWork: Members ───────────────────────────────────────────
+
+const fromMember = (r: any): OrgMember => ({
+  orgId: r.org_id, userId: r.user_id,
+  email: r.email ?? r.user_id,
+  role: r.role as OrgRole, joinedAt: r.joined_at,
+});
+
+export const dbOrgMembers = {
+  getByOrg: async (orgId: string): Promise<OrgMember[]> => {
+    const { data } = await supabase
+      .from('org_members')
+      .select('*, u:user_id(email:raw_user_meta_data->>email)')
+      .eq('org_id', orgId)
+      .order('joined_at');
+    return (data ?? []).map((r) => ({
+      ...fromMember(r),
+      email: (r.u as any)?.email ?? r.user_id,
+    }));
+  },
+  updateRole: async (orgId: string, userId: string, role: OrgRole): Promise<void> => {
+    await supabase.from('org_members').update({ role }).eq('org_id', orgId).eq('user_id', userId);
+  },
+  remove: async (orgId: string, userId: string): Promise<void> => {
+    await supabase.from('org_members').delete().eq('org_id', orgId).eq('user_id', userId);
+  },
+};
+
+// ── CoWork: Invites ───────────────────────────────────────────
+
+export const dbOrgInvites = {
+  getByOrg: async (orgId: string): Promise<OrgInvite[]> => {
+    const { data } = await supabase
+      .from('org_invites')
+      .select('*')
+      .eq('org_id', orgId)
+      .is('used_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false });
+    return (data ?? []).map((r) => ({
+      id: r.id, orgId: r.org_id, email: r.email, role: r.role as OrgRole,
+      token: r.token, expiresAt: r.expires_at, createdAt: r.created_at,
+    }));
+  },
+  create: async (orgId: string, email: string, role: OrgRole): Promise<OrgInvite> => {
+    const { data, error } = await supabase
+      .from('org_invites').insert({ org_id: orgId, email, role }).select().single();
+    if (error) throw error;
+    return {
+      id: data.id, orgId: data.org_id, email: data.email, role: data.role,
+      token: data.token, expiresAt: data.expires_at, createdAt: data.created_at,
+    };
+  },
+  revoke: async (id: string): Promise<void> => {
+    await supabase.from('org_invites').delete().eq('id', id);
+  },
+  accept: async (token: string, userId: string): Promise<void> => {
+    const { data, error } = await supabase
+      .from('org_invites').select('*').eq('token', token).is('used_at', null).maybeSingle();
+    if (error || !data) throw new Error('Convite inválido ou expirado.');
+    await Promise.all([
+      supabase.from('org_members').insert({ org_id: data.org_id, user_id: userId, role: data.role }),
+      supabase.from('org_invites').update({ used_at: new Date().toISOString() }).eq('id', data.id),
+    ]);
   },
 };
 

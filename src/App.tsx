@@ -15,6 +15,8 @@ const Despesas    = lazy(() => import('./pages/Despesas'));
 const Calculadora = lazy(() => import('./pages/Calculadora'));
 const Configs     = lazy(() => import('./pages/Configs'));
 const Calendario  = lazy(() => import('./pages/Calendario'));
+const Planos      = lazy(() => import('./pages/Planos'));
+const Equipe      = lazy(() => import('./pages/Equipe'));
 
 function PageFallback() {
   return (
@@ -83,6 +85,8 @@ function ProtectedRoutes() {
         <Route path="calendario"    element={page(Calendario,  'Calendário')}   />
         <Route path="calculadora"   element={page(Calculadora, 'Calculadora')}  />
         <Route path="configs"       element={page(Configs,     'Configurações')} />
+        <Route path="planos"        element={page(Planos,      'Planos')}        />
+        <Route path="equipe"        element={page(Equipe,      'Equipe')}        />
         <Route path="*"             element={<NotFound />}                      />
       </Route>
     </Routes>

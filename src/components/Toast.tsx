@@ -3,13 +3,24 @@ import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastItem {
   id: string;
   message: string;
   type: ToastType;
+  action?: ToastAction;
 }
 
-type ToastFn = (message: string, type?: ToastType) => void;
+interface ToastOptions {
+  action?: ToastAction;
+  duration?: number;
+}
+
+type ToastFn = (message: string, type?: ToastType, opts?: ToastOptions) => void;
 
 const ToastCtx = createContext<ToastFn>(() => {});
 export const useToast = () => useContext(ToastCtx);
@@ -21,12 +32,28 @@ const CONFIG: Record<ToastType, { icon: React.ElementType; card: string; icon_: 
   info:    { icon: Info,         card: 'bg-white border-slate-200  shadow-slate-100/60',  icon_: 'text-slate-400'   },
 };
 
-function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {
+function ToastCard({
+  item,
+  onDismiss,
+}: {
+  item: ToastItem;
+  onDismiss: (id: string) => void;
+}) {
   const { icon: Icon, card, icon_ } = CONFIG[item.type];
   return (
     <div className={`animate-toast-in flex items-start gap-3 pl-4 pr-3 py-3.5 rounded-2xl border shadow-xl max-w-sm w-full pointer-events-auto ${card}`}>
       <Icon size={16} className={`flex-shrink-0 mt-0.5 ${icon_}`} />
-      <p className="text-sm text-slate-700 leading-relaxed flex-1">{item.message}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-slate-700 leading-relaxed">{item.message}</p>
+        {item.action && (
+          <button
+            onClick={() => { item.action!.onClick(); onDismiss(item.id); }}
+            className="mt-1.5 text-xs font-semibold text-shopee-500 hover:text-shopee-600 transition-colors"
+          >
+            {item.action.label}
+          </button>
+        )}
+      </div>
       <button
         onClick={() => onDismiss(item.id)}
         className="flex-shrink-0 text-slate-300 hover:text-slate-500 transition-colors mt-0.5"
@@ -40,10 +67,11 @@ function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const toast = useCallback<ToastFn>((message, type = 'info') => {
+  const toast = useCallback<ToastFn>((message, type = 'info', opts) => {
     const id = crypto.randomUUID();
-    setToasts((t) => [...t, { id, message, type }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    const duration = opts?.duration ?? 4500;
+    setToasts((t) => [...t, { id, message, type, action: opts?.action }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), duration);
   }, []);
 
   const dismiss = useCallback((id: string) => {

@@ -1,13 +1,14 @@
 import { useState, useEffect, useLayoutEffect, useMemo } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Package, KanbanSquare,
   TrendingUp, Calculator, Settings, Store, Receipt, LogOut,
   ChevronsLeft, Menu, Moon, Sun, Keyboard, CalendarDays,
+  Loader2, CloudUpload, Sparkles, Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ToastProvider, useToast } from './Toast';
-import { setSyncErrorListener } from '../lib/sync';
+import { setSyncErrorListener, setSyncStateListener, setLimitListener, type SyncState } from '../lib/sync';
 import { useStore } from '../store';
 import { useRealtime } from '../hooks/useRealtime';
 
@@ -35,11 +36,13 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/kanban',      label: 'Tarefas',     icon: KanbanSquare },
       { to: '/calendario',  label: 'Calendário',  icon: CalendarDays },
       { to: '/calculadora', label: 'Calculadora', icon: Calculator },
+      { to: '/equipe',      label: 'Equipe',      icon: Users },
     ],
   },
 ];
 
-const CONFIG_ITEM = { to: '/configs', label: 'Configurações', icon: Settings };
+const CONFIG_ITEM  = { to: '/configs', label: 'Configurações', icon: Settings };
+const PLANOS_ITEM  = { to: '/planos',  label: 'Planos',        icon: Sparkles };
 
 
 const SHORTCUTS = [
@@ -74,6 +77,28 @@ function SyncErrorHandler() {
     return () => setSyncErrorListener(() => {});
   }, [toast]);
   return null;
+}
+
+function LimitHandler() {
+  const toast = useToast();
+  const navigate = useNavigate();
+  useEffect(() => {
+    setLimitListener((msg, type, showUpgrade) =>
+      toast(msg, type, showUpgrade
+        ? { duration: 7000, action: { label: 'Ver planos', onClick: () => navigate('/planos') } }
+        : { duration: 5000 }
+      )
+    );
+    return () => setLimitListener(null);
+  }, [toast, navigate]);
+  return null;
+}
+
+function SyncDot({ state }: { state: SyncState }) {
+  if (state === 'idle') return null;
+  return state === 'syncing'
+    ? <Loader2 size={12} className="text-slate-500 animate-spin flex-shrink-0" />
+    : <CloudUpload size={12} className="text-emerald-500 flex-shrink-0" />;
 }
 
 function Tip({ label }: { label: string }) {
@@ -203,6 +228,7 @@ function SidebarFooter({
   collapsed,
   email,
   darkMode,
+  syncState,
   onToggleDark,
   onShowShortcuts,
   onSignOut,
@@ -210,6 +236,7 @@ function SidebarFooter({
   collapsed: boolean;
   email: string;
   darkMode: boolean;
+  syncState: SyncState;
   onToggleDark: () => void;
   onShowShortcuts: () => void;
   onSignOut: () => void;
@@ -220,6 +247,23 @@ function SidebarFooter({
   if (collapsed) {
     return (
       <div className="border-t border-white/[0.06] py-3 flex flex-col items-center gap-2">
+        {/* Planos */}
+        <div className="relative group">
+          <NavLink
+            to={PLANOS_ITEM.to}
+            className={({ isActive }) =>
+              `flex items-center justify-center w-10 h-9 rounded-lg transition-all duration-150 ${
+                isActive
+                  ? 'bg-shopee-500 text-white shadow-md shadow-shopee-500/25'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]'
+              }`
+            }
+          >
+            <Sparkles size={16} />
+          </NavLink>
+          <Tip label="Planos" />
+        </div>
+
         {/* Config */}
         <div className="relative group">
           <NavLink
@@ -238,6 +282,13 @@ function SidebarFooter({
         </div>
 
         <div className="w-5 h-px bg-white/[0.08] mx-auto" />
+
+        {/* Sync dot */}
+        {syncState !== 'idle' && (
+          <div className="flex items-center justify-center w-10 h-5">
+            <SyncDot state={syncState} />
+          </div>
+        )}
 
         {/* Dark mode */}
         <div className="relative group">
@@ -266,8 +317,9 @@ function SidebarFooter({
 
   return (
     <div className="border-t border-white/[0.06]">
-      {/* Config item */}
-      <div className="px-3 pt-3 pb-2">
+      {/* Planos + Config items */}
+      <div className="px-3 pt-3 pb-2 space-y-0.5">
+        <NavItem item={PLANOS_ITEM} collapsed={false} />
         <NavItem item={CONFIG_ITEM} collapsed={false} />
       </div>
 
@@ -278,6 +330,7 @@ function SidebarFooter({
             {initials}
           </div>
           <p className="text-slate-300 text-xs truncate flex-1 leading-tight">{username}</p>
+          <SyncDot state={syncState} />
           <div className="flex items-center gap-0.5 flex-shrink-0">
             <button
               onClick={onToggleDark}
@@ -329,6 +382,12 @@ export default function Layout() {
   const [collapsed,     setCollapsed]     = useState(() => localStorage.getItem('sb-collapsed') === '1');
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [syncState,     setSyncState]     = useState<SyncState>('idle');
+
+  useEffect(() => {
+    setSyncStateListener(setSyncState);
+    return () => setSyncStateListener(null);
+  }, []);
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -400,6 +459,7 @@ export default function Layout() {
           collapsed={false}
           email={email}
           darkMode={darkMode}
+          syncState={syncState}
           onToggleDark={toggleDark}
           onShowShortcuts={() => setShowShortcuts(true)}
           onSignOut={signOut}
@@ -445,6 +505,7 @@ export default function Layout() {
           collapsed={collapsed}
           email={email}
           darkMode={darkMode}
+          syncState={syncState}
           onToggleDark={toggleDark}
           onShowShortcuts={() => setShowShortcuts(true)}
           onSignOut={signOut}
@@ -503,6 +564,7 @@ export default function Layout() {
       </div>
     </div>
     <SyncErrorHandler />
+    <LimitHandler />
     </ToastProvider>
   );
 }

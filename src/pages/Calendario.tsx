@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronRight, KanbanSquare, AlertCircle,
+  ChevronLeft, ChevronRight, KanbanSquare, AlertCircle, Download,
 } from 'lucide-react';
 import { useStore } from '../store';
+import { useToast } from '../components/Toast';
+import { downloadICS } from '../lib/gcal';
 import type { Tarefa, PrioridadeTarefa } from '../types';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -100,6 +102,7 @@ function CalendarGrid({ tarefas, viewMonth, filterPrior }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Calendario() {
+  const toast   = useToast();
   const tarefas = useStore((s) => s.tarefas);
 
   const [viewMonth,    setViewMonth]    = useState(() => new Date().toISOString().slice(0, 7));
@@ -140,9 +143,22 @@ export default function Calendario() {
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Calendário</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Tarefas com data de vencimento</p>
         </div>
-        <Link to="/kanban" className="btn-secondary text-xs">
-          <KanbanSquare size={14} /> Ver Kanban
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            className="btn-secondary text-xs"
+            onClick={() => {
+              const comData = tarefas.filter((t) => !!t.dataVencimento);
+              if (comData.length === 0) { toast('Nenhuma tarefa com data de vencimento para exportar.', 'warning'); return; }
+              downloadICS(tarefas);
+              toast(`${comData.length} tarefa(s) exportadas como .ICS.`, 'success');
+            }}
+          >
+            <Download size={14} /> Exportar .ICS
+          </button>
+          <Link to="/kanban" className="btn-secondary text-xs">
+            <KanbanSquare size={14} /> Ver Kanban
+          </Link>
+        </div>
       </div>
 
       {/* KPIs */}

@@ -17,34 +17,80 @@ export async function withRetry<T>(
   operation: () => Promise<T>,
   label?: string
 ): Promise<T> {
+  _syncCount++;
+  _notifySyncState('syncing');
+
   let lastError: unknown;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await operation();
-    } catch (err) {
-      lastError = err;
-      if (isAuthError(err)) break;
-      if (attempt < MAX_ATTEMPTS) {
-        await new Promise((r) => setTimeout(r, BASE_DELAY_MS * 2 ** (attempt - 1)));
+  try {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const result = await operation();
+        _syncCount--;
+        if (_syncCount === 0) {
+          _notifySyncState('saved');
+          setTimeout(() => { if (_syncCount === 0) _notifySyncState('idle'); }, 2000);
+        }
+        return result;
+      } catch (err) {
+        lastError = err;
+        if (isAuthError(err)) break;
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, BASE_DELAY_MS * 2 ** (attempt - 1)));
+        }
       }
     }
+  } finally {
+    // Garante decremento mesmo em throw
   }
+
+  _syncCount = Math.max(0, _syncCount - 1);
+  if (_syncCount === 0) _notifySyncState('idle');
+
   const msg = lastError instanceof Error ? lastError.message : String(lastError);
   console.error(`[sync] Falha após ${MAX_ATTEMPTS} tentativas${label ? ` (${label})` : ''}: ${msg}`);
   throw lastError;
 }
 
-// Fila de falhas de sync para notificação ao usuário.
-// O store chama onSyncError; o Layout escuta e exibe o toast.
+// ─── Sync error listener ──────────────────────────────────────────────────────
 
 type SyncErrorListener = (message: string) => void;
-let _listener: SyncErrorListener | null = null;
+let _errorListener: SyncErrorListener | null = null;
 
 export function setSyncErrorListener(fn: SyncErrorListener) {
-  _listener = fn;
+  _errorListener = fn;
 }
 
 export function notifySyncError(message: string) {
-  if (_listener) _listener(message);
+  if (_errorListener) _errorListener(message);
   else console.warn('[sync] Sem listener registrado:', message);
+}
+
+// ─── Limit reached listener ───────────────────────────────────────────────────
+
+type LimitListener = (message: string, type: 'warning' | 'error', showUpgrade: boolean) => void;
+let _limitListener: LimitListener | null = null;
+
+export function setLimitListener(fn: LimitListener | null) {
+  _limitListener = fn;
+}
+
+export function notifyLimitReached(message: string, type: 'warning' | 'error', showUpgrade = true) {
+  if (_limitListener) _limitListener(message, type, showUpgrade);
+  else console.warn('[limit]', message);
+}
+
+// ─── Sync state listener ──────────────────────────────────────────────────────
+
+export type SyncState = 'idle' | 'syncing' | 'saved';
+type SyncStateListener = (state: SyncState) => void;
+
+let _stateListener: SyncStateListener | null = null;
+let _syncCount = 0;
+
+export function setSyncStateListener(fn: SyncStateListener | null) {
+  _stateListener = fn;
+}
+
+function _notifySyncState(state: SyncState) {
+  _stateListener?.(state);
 }

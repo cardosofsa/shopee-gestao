@@ -149,6 +149,63 @@ export interface CalculadoraDraft {
   precoVenda: number;
 }
 
+export type OrgRole = 'owner' | 'admin' | 'operador' | 'viewer';
+
+export interface Organization {
+  id: string;
+  nome: string;
+  owner: string;
+  createdAt: string;
+}
+
+export interface OrgMember {
+  orgId: string;
+  userId: string;
+  email: string;
+  role: OrgRole;
+  joinedAt: string;
+}
+
+export interface OrgInvite {
+  id: string;
+  orgId: string;
+  email: string;
+  role: OrgRole;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface PlanFeatures {
+  dre: boolean;
+  importAuto: boolean;
+  exportXlsx: boolean;
+  kanban: boolean;
+  calculadora: boolean;
+  relatoriosPdf: boolean;
+  api: boolean;
+  multiLoja: boolean;
+}
+
+export interface Plan {
+  id: string;
+  nome: string;
+  limitePedidosMes: number | null;
+  limiteSKUs: number | null;
+  limiteUsuarios: number;
+  features: PlanFeatures;
+}
+
+export interface Subscription {
+  userId: string;
+  planId: string;
+  plan: Plan;
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  pedidosMesAtual: number;
+  periodoInicio: string | null;
+  periodoFim: string | null;
+}
+
 export interface KPIs {
   faturamentoMes: number;
   pedidosMes: number;

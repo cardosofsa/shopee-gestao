@@ -76,7 +76,7 @@ export function MovimentacoesTab() {
                 movTipo === t
                   ? t === 'Entrada' ? 'bg-emerald-500 text-white border-emerald-500'
                     : t === 'Saída'  ? 'bg-red-500 text-white border-red-500'
-                    : t === 'Ajuste' ? 'bg-violet-500 text-white border-violet-500'
+                    : t === 'Ajuste' ? 'bg-amber-500 text-white border-amber-500'
                     : 'bg-slate-800 text-white border-slate-800'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
               }`}>
@@ -105,11 +105,11 @@ export function MovimentacoesTab() {
                 const isAjuste  = m.tipo === 'Ajuste';
                 const isEntrada = m.tipo === 'Entrada' || (isAjuste && m.ajusteTipo === 'entrada');
                 return (
-                  <tr key={m.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${isAjuste ? 'bg-violet-50/30 dark:bg-violet-900/10' : ''}`}>
+                  <tr key={m.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${isAjuste ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
                     <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs">{m.dataDisplay}</td>
                     <td className="px-3 py-2.5">
                       {isAjuste ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-violet-50 text-violet-700 border-violet-200">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border bg-amber-50 text-amber-700 border-amber-200">
                           {m.ajusteTipo === 'entrada' ? <ArrowDownCircle size={11} /> : <ArrowUpCircle size={11} />}
                           Ajuste {m.ajusteTipo === 'entrada' ? '+' : '−'}
                         </span>

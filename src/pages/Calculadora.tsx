@@ -422,7 +422,7 @@ export default function Calculadora() {
         <button onClick={() => setModoReverso((v) => !v)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
             modoReverso
-              ? 'bg-violet-50 border-violet-300 text-violet-600'
+              ? 'bg-amber-50 border-amber-300 text-amber-600'
               : 'border-slate-200 text-slate-500 hover:border-slate-300'
           }`}>
           <RotateCcw size={13} /> Modo Reverso
@@ -543,8 +543,8 @@ export default function Calculadora() {
 
           {/* Reverse mode card */}
           {modoReverso && (
-            <div className="card p-5 border-violet-200 bg-violet-50/30 space-y-4">
-              <h3 className="text-sm font-semibold text-violet-700 flex items-center gap-2">
+            <div className="card p-5 border-amber-200 bg-amber-50/30 space-y-4">
+              <h3 className="text-sm font-semibold text-amber-700 flex items-center gap-2">
                 <RotateCcw size={14} /> Modo Reverso — Analisar Preço Existente
               </h3>
               <div>
@@ -554,7 +554,7 @@ export default function Calculadora() {
                   onChange={(e) => setPrecoVenda(parseFloat(e.target.value) || 0)} />
               </div>
               {calcReverso && (
-                <div className="space-y-3 pt-2 border-t border-violet-100">
+                <div className="space-y-3 pt-2 border-t border-amber-100">
                   <div className={`text-center py-3 rounded-xl ${
                     calcReverso.margemReal >= 20 ? 'bg-emerald-50 border border-emerald-100'
                     : calcReverso.margemReal >= 10 ? 'bg-amber-50 border border-amber-100'
