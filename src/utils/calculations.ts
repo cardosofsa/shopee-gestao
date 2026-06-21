@@ -1,4 +1,4 @@
-import type { Pedido, RankingProduto } from '../types';
+import type { Pedido, RankingProduto, StatusEstoque } from '../types';
 
 export const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -91,22 +91,25 @@ export function getRankingProdutos(pedidos: Pedido[]): RankingProduto[] {
 
   ranking.sort((a, b) => b.receita - a.receita);
 
-  // ABC curve
+  // ABC curve: produto que INICIA dentro da faixa 0-80% é A,
+  // independente de ultrapassar o limite ao ser adicionado.
   let acum = 0;
   for (const r of ranking) {
+    const prevAcum = acum;
     acum += r.percentReceita;
-    r.curvaABC = acum <= 80 ? 'A' : acum <= 95 ? 'B' : 'C';
+    r.curvaABC = prevAcum < 80 ? 'A' : prevAcum < 95 ? 'B' : 'C';
   }
 
   return ranking;
 }
 
-export function getStatusEstoque(estoqueAtual: number, vendaDia: number, estoqueSeguranca: number): string {
-  if (estoqueAtual === 0) return 'Ruptura';
+export function getStatusEstoque(estoqueAtual: number, vendaDia: number, estoqueSeguranca: number): StatusEstoque {
+  if (estoqueAtual === 0) return 'Comprar';
   const diasCobertura = vendaDia > 0 ? estoqueAtual / vendaDia : Infinity;
-  if (diasCobertura < 7) return 'Crítico';
-  if (estoqueAtual > estoqueSeguranca * 3) return 'Excesso';
-  return 'OK';
+  if (diasCobertura < 7) return 'Comprar';
+  if (estoqueAtual <= estoqueSeguranca || diasCobertura < 30) return 'Estoque Baixo';
+  if (isFinite(diasCobertura) && diasCobertura > 90 && estoqueAtual > estoqueSeguranca * 3) return 'Estoque Acima';
+  return 'Estoque Estável';
 }
 
 export function getKPIsMes(pedidos: Pedido[], mes?: string) {

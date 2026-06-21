@@ -154,6 +154,9 @@ export const dbCompras = {
   insert: async (c: Compra, uid: string) => {
     await supabase.from('compras').insert(toCompra(c, uid));
   },
+  upsert: async (c: Compra, uid: string) => {
+    await supabase.from('compras').upsert(toCompra(c, uid));
+  },
   delete: async (id: string, uid: string) => {
     await supabase.from('compras').delete().eq('id', id).eq('user_id', uid);
   },
@@ -168,6 +171,9 @@ export const dbDespesas = {
   },
   insert: async (d: Despesa, uid: string) => {
     await supabase.from('despesas').insert(toDespesa(d, uid));
+  },
+  upsert: async (d: Despesa, uid: string) => {
+    await supabase.from('despesas').upsert(toDespesa(d, uid));
   },
   deleteByCompraRef: async (compraRef: string, uid: string) => {
     await supabase.from('despesas').delete().eq('compra_ref', compraRef).eq('user_id', uid);
@@ -212,6 +218,77 @@ export const dbHistorico = {
   },
   upsert: async (h: HistoricoMensal, uid: string) => {
     await supabase.from('historico_mensal').upsert(toHistorico(h, uid));
+  },
+  delete: async (mesAno: string, uid: string) => {
+    await supabase.from('historico_mensal').delete().eq('mes_ano', mesAno).eq('user_id', uid);
+  },
+};
+
+// ── Log de Importações ───────────────────────────────────────
+
+export interface ImportacaoLog {
+  id: string;
+  importadoEm: string;
+  formato: 'shopee_nativo' | 'upseller' | 'generico';
+  total: number;
+  novos: number;
+  duplicados: number;
+  loja?: string;
+}
+
+export const dbImportacoes = {
+  getAll: async (uid: string): Promise<ImportacaoLog[]> => {
+    const { data } = await supabase
+      .from('importacoes_log')
+      .select('*')
+      .eq('user_id', uid)
+      .order('importado_em', { ascending: false })
+      .limit(50);
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      importadoEm: r.importado_em,
+      formato: r.formato,
+      total: r.total,
+      novos: r.novos,
+      duplicados: r.duplicados,
+      loja: r.loja ?? undefined,
+    }));
+  },
+  insert: async (
+    log: Omit<ImportacaoLog, 'id' | 'importadoEm'>,
+    uid: string,
+  ) => {
+    await supabase.from('importacoes_log').insert({
+      user_id:    uid,
+      formato:    log.formato,
+      total:      log.total,
+      novos:      log.novos,
+      duplicados: log.duplicados,
+      loja:       log.loja ?? null,
+    });
+  },
+};
+
+// ── Ajustes de Estoque ───────────────────────────────────────
+
+export const dbAjustes = {
+  getAll: async (uid: string) => {
+    const { data } = await supabase
+      .from('ajustes_estoque')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+    return data ?? [];
+  },
+  insert: async (a: { id: string; sku: string; delta: number; motivo: string; criadoEm: string }, uid: string) => {
+    await supabase.from('ajustes_estoque').insert({
+      id:         a.id,
+      user_id:    uid,
+      sku:        a.sku,
+      data:       a.criadoEm.slice(0, 10),
+      delta:      a.delta,
+      motivo:     a.motivo,
+    });
   },
 };
 

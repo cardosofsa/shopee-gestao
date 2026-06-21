@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { Pedido, Despesa, Produto } from '../types';
+import type { DREResult } from '../domain/dre';
 import { getRankingProdutos } from './calculations';
 
 function moeda(v: number) {
@@ -10,53 +11,39 @@ function pct(v: number) {
   return `${v.toFixed(1)}%`;
 }
 
-interface DREData {
-  fat: number;
-  cmv: number;
-  taxas: number;
-  ads: number;
-  das: number;
-  despesasOp: number;
-  lucroBruto: number;
-  lucroOp: number;
-  lucroLiq: number;
-  margem: number;
-  pedidosQtd: number;
-  mesLabel: string;
-}
-
 export function exportarRelatorioMensal(
   mesAno: string,
   pedidos: Pedido[],
   despesas: Despesa[],
   produtos: Produto[],
-  dre: DREData
+  dre: DREResult,
+  mesLabel: string,
 ) {
   const wb = XLSX.utils.book_new();
-  const mesLabel = dre.mesLabel;
+  const f = dre.faturamentoBruto;
 
   // ── Sheet 1: DRE ──────────────────────────────────────────────
   const dreRows = [
     ['DRE — ' + mesLabel, '', ''],
     ['', '', ''],
     ['RECEITAS', '', ''],
-    ['Faturamento Bruto', moeda(dre.fat), ''],
+    ['Faturamento Bruto', moeda(f), ''],
     ['', '', ''],
     ['CUSTOS & DESPESAS', '', ''],
-    ['CMV (Custo Mercadoria Vendida)', moeda(dre.cmv), pct(dre.fat > 0 ? (dre.cmv / dre.fat) * 100 : 0)],
-    ['Taxas Shopee', moeda(dre.taxas), pct(dre.fat > 0 ? (dre.taxas / dre.fat) * 100 : 0)],
-    ['Marketing / Ads', moeda(dre.ads), pct(dre.fat > 0 ? (dre.ads / dre.fat) * 100 : 0)],
-    ['DAS / Imposto', moeda(dre.das), pct(dre.fat > 0 ? (dre.das / dre.fat) * 100 : 0)],
-    ['Despesas Operacionais', moeda(dre.despesasOp), pct(dre.fat > 0 ? (dre.despesasOp / dre.fat) * 100 : 0)],
+    ['CMV (Custo Mercadoria Vendida)', moeda(dre.cmv),                  pct(f > 0 ? (dre.cmv                  / f) * 100 : 0)],
+    ['Taxas Shopee',                  moeda(dre.taxasShopee),           pct(f > 0 ? (dre.taxasShopee           / f) * 100 : 0)],
+    ['Marketing / Ads',               moeda(dre.marketingAds),          pct(f > 0 ? (dre.marketingAds          / f) * 100 : 0)],
+    ['DAS / Imposto',                 moeda(dre.dasImposto),            pct(f > 0 ? (dre.dasImposto            / f) * 100 : 0)],
+    ['Despesas Operacionais',         moeda(dre.despesasOperacionais),  pct(f > 0 ? (dre.despesasOperacionais  / f) * 100 : 0)],
     ['', '', ''],
     ['RESULTADOS', '', ''],
-    ['Lucro Bruto', moeda(dre.lucroBruto), pct(dre.fat > 0 ? (dre.lucroBruto / dre.fat) * 100 : 0)],
-    ['Lucro Operacional', moeda(dre.lucroOp), pct(dre.fat > 0 ? (dre.lucroOp / dre.fat) * 100 : 0)],
-    ['Lucro Líquido', moeda(dre.lucroLiq), pct(dre.margem)],
+    ['Lucro Bruto',       moeda(dre.lucroBruto),       pct(f > 0 ? (dre.lucroBruto       / f) * 100 : 0)],
+    ['Lucro Operacional', moeda(dre.lucroOperacional),  pct(f > 0 ? (dre.lucroOperacional  / f) * 100 : 0)],
+    ['Lucro Líquido',     moeda(dre.lucroLiquido),     pct(dre.margemPercentual)],
     ['', '', ''],
     ['INDICADORES', '', ''],
     ['Pedidos (concluídos + enviados)', dre.pedidosQtd, ''],
-    ['Ticket Médio', moeda(dre.pedidosQtd > 0 ? dre.fat / dre.pedidosQtd : 0), ''],
+    ['Ticket Médio', moeda(dre.ticketMedio), ''],
   ];
   const wsDRE = XLSX.utils.aoa_to_sheet(dreRows);
   wsDRE['!cols'] = [{ wch: 34 }, { wch: 16 }, { wch: 10 }];

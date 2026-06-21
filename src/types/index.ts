@@ -1,6 +1,6 @@
 export type StatusPedido = 'Em processo' | 'Enviado' | 'Concluído' | 'Devolvido';
-export type CategoriaDespesa = 'Embalagem' | 'Combustível' | 'Insumos' | 'Mercadoria' | 'Marketing' | 'Outro';
-export type StatusEstoque = 'OK' | 'Crítico' | 'Ruptura' | 'Excesso';
+export type CategoriaDespesa = string;
+export type StatusEstoque = 'Comprar' | 'Estoque Baixo' | 'Estoque Estável' | 'Estoque Acima';
 export type PrioridadeTarefa = 'baixa' | 'media' | 'alta';
 export type ColunaTarefa = 'todo' | 'in_progress' | 'done';
 
@@ -35,6 +35,19 @@ export interface Pedido {
   lucroOperacional: number;
   margemSCustoProduto: number;
   margemSCustoTotal: number;
+  observacoes?: string;
+}
+
+export interface AjusteEstoque {
+  id: string;
+  sku: string;
+  produto: string;
+  tipo: 'entrada' | 'saida';
+  quantidade: number;
+  estoqueAntes: number;
+  estoqueDepois: number;
+  motivo: string;
+  criadoEm: string;
 }
 
 export interface Compra {
@@ -95,6 +108,45 @@ export interface HistoricoMensal {
 export interface Configuracoes {
   aliquotaDAS: number;
   percentualMarketing: number;
+  metaFaturamento?: number;
+  metaMargem?: number;
+  nomeEmpresa?: string;
+  tipoEmpresa?: 'MEI' | 'ME' | 'EPP';
+  cnpj?: string;
+}
+
+export interface PrecificacaoSalva {
+  id: string;
+  nome: string;
+  skuRef?: string;
+  custo: number;
+  embalagem: number;
+  frete: number;
+  comissaoShopee: number;
+  taxaFixa: number;
+  aliquotaDAS: number;
+  percentualAds: number;
+  margemDesejada: number;
+  modo: 'shopee' | 'avancado';
+  preco: number;
+  margemReal: number;
+  lucro: number;
+  criadoEm: string;
+}
+
+export interface CalculadoraDraft {
+  modo: 'shopee' | 'avancado';
+  modoReverso: boolean;
+  skuRef: string;
+  custo: number;
+  embalagem: number;
+  frete: number;
+  percentualAds: number;
+  aliquotaDAS: number;
+  margemDesejada: number;
+  comissaoShopee: number;
+  taxaFixa: number;
+  precoVenda: number;
 }
 
 export interface KPIs {

@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Produto, Pedido, Compra, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa } from '../types';
-import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, loadUserData, seedUserData } from '../lib/db';
+import type { Produto, Pedido, Compra, AjusteEstoque, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa, PrecificacaoSalva, CalculadoraDraft } from '../types';
+import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, dbAjustes, loadUserData, seedUserData } from '../lib/db';
+import { withRetry, notifySyncError } from '../lib/sync';
+
+function syncFail(label: string) {
+  return (err: unknown) => {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    notifySyncError(`Falha ao salvar ${label}: ${msg}`);
+  };
+}
 
 const DEFAULT_CONFIGURACOES: Configuracoes = { aliquotaDAS: 0, percentualMarketing: 2 };
 
@@ -42,14 +50,18 @@ const TAREFAS_SEED: Tarefa[] = [
   { id: 't5', titulo: 'Cadastrar novo SKU carregador', descricao: 'Carregador USB-C 65W chegou', coluna: 'done', posicao: 0, prioridade: 'baixa', criadoEm: '2026-06-16T14:00:00Z' },
 ];
 
+const DEFAULT_CATEGORIAS_DESP = ['Embalagem', 'Combustível', 'Insumos', 'Mercadoria', 'Marketing', 'Outro'];
+
 interface AppState {
   produtos: Produto[];
   pedidos: Pedido[];
   compras: Compra[];
+  ajustes: AjusteEstoque[];
   despesas: Despesa[];
   tarefas: Tarefa[];
   historico: HistoricoMensal[];
   configuracoes: Configuracoes;
+  categoriasDesp: string[];
   userId: string | null;
   isHydrated: boolean;
 
@@ -61,8 +73,11 @@ interface AppState {
   // Actions - Pedidos
   addPedido: (p: Pedido) => void;
   addPedidos: (ps: Pedido[]) => void;
+  updatePedido: (id: string, updated: Pedido) => void;
   updatePedidoStatus: (id: string, status: Pedido['status']) => void;
+  updatePedidosStatus: (ids: string[], status: Pedido['status']) => void;
   deletePedido: (id: string) => void;
+  deletePedidos: (ids: string[]) => void;
 
   // Actions - Produtos
   addProduto: (p: Produto) => void;
@@ -72,10 +87,15 @@ interface AppState {
 
   // Actions - Compras
   addCompra: (c: Compra) => void;
+  updateCompra: (id: string, data: Partial<Compra>) => void;
   deleteCompra: (id: string) => void;
+
+  // Actions - Ajustes
+  addAjuste: (a: AjusteEstoque) => void;
 
   // Actions - Despesas
   addDespesa: (d: Omit<Despesa, 'id'>) => void;
+  updateDespesa: (id: string, data: Partial<Omit<Despesa, 'id' | 'compraRef'>>) => void;
   deleteDespesa: (id: string) => void;
 
   // Actions - Tarefas
@@ -87,12 +107,40 @@ interface AppState {
   // Actions - Historico
   addHistorico: (h: HistoricoMensal) => void;
   updateHistorico: (mesAno: string, data: Partial<HistoricoMensal>) => void;
+  deleteHistorico: (mesAno: string) => void;
 
   // Actions - Config
   updateConfiguracoes: (c: Partial<Configuracoes>) => void;
+  updateCategoriasDesp: (cats: string[]) => void;
+
+  // Actions - Categorias de Produto
+  categoriasProd: string[];
+  updateCategoriasProd: (cats: string[]) => void;
+
+  // Actions - Precificações
+  precificacoesSalvas: PrecificacaoSalva[];
+  savePrecificacao: (p: PrecificacaoSalva) => void;
+  deletePrecificacao: (id: string) => void;
+
+  // Calculadora draft (persiste o formulário ativo entre navegações)
+  calculadoraDraft: CalculadoraDraft | null;
+  setCalculadoraDraft: (d: CalculadoraDraft) => void;
+
+  // UX: onboarding e tema
+  onboardingCompleted: boolean;
+  setOnboardingCompleted: () => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+
+  // Filtro global de loja
+  lojaFiltro: string | null;
+  setLojaFiltro: (loja: string | null) => void;
 
   // Seed
   resetToSeed: () => void;
+
+  // Logout cleanup
+  resetOperationalData: () => void;
 }
 
 export const useStore = create<AppState>()(
@@ -101,12 +149,20 @@ export const useStore = create<AppState>()(
       produtos: PRODUTOS_SEED,
       pedidos: [],
       compras: COMPRAS_SEED,
+      ajustes: [],
       despesas: [],
       tarefas: TAREFAS_SEED,
       historico: [],
       configuracoes: DEFAULT_CONFIGURACOES,
+      categoriasDesp: DEFAULT_CATEGORIAS_DESP,
       userId: null,
       isHydrated: false,
+      categoriasProd: ['Perfumaria', 'Moto/Bike', 'Eletrônico', 'Acessórios', 'Kit/Combo'],
+      precificacoesSalvas: [],
+      calculadoraDraft: null,
+      onboardingCompleted: false,
+      lojaFiltro: null,
+      darkMode: false,
 
       setUserId: (id) => set({ userId: id }),
 
@@ -142,60 +198,140 @@ export const useStore = create<AppState>()(
       },
 
       addPedido: (p) => {
+        const prev = get().pedidos;
         set((s) => ({ pedidos: [p, ...s.pedidos] }));
         const uid = get().userId;
-        if (uid) dbPedidos.upsert(p, uid).catch(console.error);
+        if (uid) withRetry(() => dbPedidos.upsert(p, uid), 'pedido')
+          .catch(() => { set({ pedidos: prev }); notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.'); });
       },
       addPedidos: (ps) => {
+        const prev = get().pedidos;
         set((s) => ({ pedidos: [...ps, ...s.pedidos] }));
         const uid = get().userId;
-        if (uid) dbPedidos.upsertMany(ps, uid).catch(console.error);
+        if (uid) withRetry(() => dbPedidos.upsertMany(ps, uid), 'pedidos')
+          .catch(() => { set({ pedidos: prev }); notifySyncError('Falha ao importar pedidos. Revertendo — tente novamente.'); });
+      },
+      updatePedido: (id, updated) => {
+        const { pedidos, produtos } = get();
+        const old = pedidos.find((p) => p.id === id);
+        if (!old) return;
+        const prevPedidos = pedidos;
+        const prevProdutos = produtos;
+        if (old.status !== updated.status && updated.loja !== 'Projetando') {
+          const prev = old.status;
+          const next = updated.status;
+          const u = updated.unidadesEstoque;
+          if ((next === 'Enviado' || next === 'Concluído') && prev === 'Em processo') get().updateEstoque(updated.sku, -u);
+          if (next === 'Devolvido' && (prev === 'Enviado' || prev === 'Concluído')) get().updateEstoque(updated.sku, u);
+        }
+        set((s) => ({ pedidos: s.pedidos.map((p) => (p.id === id ? updated : p)) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbPedidos.upsert(updated, uid), 'pedido')
+          .catch(() => { set({ pedidos: prevPedidos, produtos: prevProdutos }); notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.'); });
       },
       updatePedidoStatus: (id, status) => {
-        const { pedidos, updateEstoque } = get();
+        const { pedidos, produtos } = get();
         const pedido = pedidos.find((p) => p.id === id);
         if (!pedido) return;
+        const prevPedidos = pedidos;
+        const prevProdutos = produtos;
         const prevStatus = pedido.status;
         const unidades = pedido.unidadesEstoque;
         if (pedido.loja !== 'Projetando') {
-          if ((status === 'Enviado' || status === 'Concluído') && prevStatus === 'Em processo') updateEstoque(pedido.sku, -unidades);
-          if (status === 'Devolvido' && (prevStatus === 'Enviado' || prevStatus === 'Concluído')) updateEstoque(pedido.sku, unidades);
+          if ((status === 'Enviado' || status === 'Concluído') && prevStatus === 'Em processo') get().updateEstoque(pedido.sku, -unidades);
+          if (status === 'Devolvido' && (prevStatus === 'Enviado' || prevStatus === 'Concluído')) get().updateEstoque(pedido.sku, unidades);
         }
         set((s) => ({ pedidos: s.pedidos.map((p) => (p.id === id ? { ...p, status } : p)) }));
         const uid = get().userId;
-        if (uid) dbPedidos.updateStatus(id, status, uid).catch(console.error);
+        if (uid) withRetry(() => dbPedidos.updateStatus(id, status, uid), 'status do pedido')
+          .catch(() => { set({ pedidos: prevPedidos, produtos: prevProdutos }); notifySyncError('Falha ao atualizar status. Revertendo — tente novamente.'); });
+      },
+      updatePedidosStatus: (ids, status) => {
+        const { pedidos, produtos } = get();
+        const prevPedidos = pedidos;
+        const prevProdutos = produtos;
+        const idsSet = new Set(ids);
+        const stockDeltas = new Map<string, number>();
+        ids.forEach((id) => {
+          const p = pedidos.find((x) => x.id === id);
+          if (!p || p.status === status || p.loja === 'Projetando') return;
+          const delta = stockDeltas.get(p.sku) ?? 0;
+          if ((status === 'Enviado' || status === 'Concluído') && p.status === 'Em processo')
+            stockDeltas.set(p.sku, delta - p.unidadesEstoque);
+          if (status === 'Devolvido' && (p.status === 'Enviado' || p.status === 'Concluído'))
+            stockDeltas.set(p.sku, delta + p.unidadesEstoque);
+        });
+        set((s) => ({
+          pedidos: s.pedidos.map((p) => idsSet.has(p.id) ? { ...p, status } : p),
+          produtos: s.produtos.map((p) => {
+            const d = stockDeltas.get(p.sku);
+            return d !== undefined ? { ...p, estoqueAtual: Math.max(0, p.estoqueAtual + d) } : p;
+          }),
+        }));
+        const uid = get().userId;
+        if (uid) {
+          Promise.all([
+            ...ids.map((id) => withRetry(() => dbPedidos.updateStatus(id, status, uid), 'status')),
+            ...Array.from(stockDeltas.entries()).map(([sku]) => {
+              const prod = get().produtos.find((p) => p.sku === sku);
+              return prod ? withRetry(() => dbProdutos.updateEstoque(sku, prod.estoqueAtual, uid), 'estoque') : Promise.resolve();
+            }),
+          ]).catch(() => { set({ pedidos: prevPedidos, produtos: prevProdutos }); notifySyncError('Falha ao atualizar status em lote. Revertendo — tente novamente.'); });
+        }
       },
       deletePedido: (id) => {
+        const prev = get().pedidos;
         set((s) => ({ pedidos: s.pedidos.filter((p) => p.id !== id) }));
         const uid = get().userId;
-        if (uid) dbPedidos.delete(id, uid).catch(console.error);
+        if (uid) withRetry(() => dbPedidos.delete(id, uid), 'pedido')
+          .catch(() => { set({ pedidos: prev }); notifySyncError('Falha ao excluir pedido. Revertendo — tente novamente.'); });
+      },
+      deletePedidos: (ids) => {
+        const prev = get().pedidos;
+        const idsSet = new Set(ids);
+        set((s) => ({ pedidos: s.pedidos.filter((p) => !idsSet.has(p.id)) }));
+        const uid = get().userId;
+        if (uid) Promise.all(ids.map((id) => withRetry(() => dbPedidos.delete(id, uid), 'pedido')))
+          .catch(() => { set({ pedidos: prev }); notifySyncError('Falha ao excluir pedidos. Revertendo — tente novamente.'); });
       },
 
       addProduto: (p) => {
         set((s) => ({ produtos: [...s.produtos, p] }));
         const uid = get().userId;
-        if (uid) dbProdutos.upsert(p, uid).catch(console.error);
+        if (uid) withRetry(() => dbProdutos.upsert(p, uid), 'produto').catch(syncFail('produto'));
       },
       updateProduto: (sku, data) => {
         set((s) => ({ produtos: s.produtos.map((p) => (p.sku === sku ? { ...p, ...data } : p)) }));
         const uid = get().userId;
         const updated = get().produtos.find((p) => p.sku === sku);
-        if (uid && updated) dbProdutos.upsert(updated, uid).catch(console.error);
+        if (uid && updated) withRetry(() => dbProdutos.upsert(updated, uid), 'produto').catch(syncFail('produto'));
       },
       deleteProduto: (sku) => {
+        const { pedidos, compras } = get();
+        const temPedidos = pedidos.some((p) => p.sku === sku);
+        const temCompras = compras.some((c) => c.sku === sku);
+        if (temPedidos || temCompras) {
+          const origem = [temPedidos && 'pedidos', temCompras && 'compras'].filter(Boolean).join(' e ');
+          notifySyncError(`Não é possível excluir: o produto possui ${origem} vinculados.`);
+          return;
+        }
         set((s) => ({ produtos: s.produtos.filter((p) => p.sku !== sku) }));
         const uid = get().userId;
-        if (uid) dbProdutos.delete(sku, uid).catch(console.error);
+        if (uid) withRetry(() => dbProdutos.delete(sku, uid), 'produto').catch(syncFail('produto'));
       },
       updateEstoque: (sku, delta) => {
         const cur = get().produtos.find((p) => p.sku === sku);
         const newVal = Math.max(0, (cur?.estoqueAtual ?? 0) + delta);
         set((s) => ({ produtos: s.produtos.map((p) => p.sku === sku ? { ...p, estoqueAtual: newVal } : p) }));
         const uid = get().userId;
-        if (uid) dbProdutos.updateEstoque(sku, newVal, uid).catch(console.error);
+        if (uid) withRetry(() => dbProdutos.updateEstoque(sku, newVal, uid), 'estoque').catch(syncFail('estoque'));
       },
 
       addCompra: (c) => {
+        const { compras, despesas, produtos } = get();
+        const prevCompras = compras;
+        const prevDespesas = despesas;
+        const prevProdutos = produtos;
         const despesa: Despesa = {
           id: crypto.randomUUID(),
           data: c.data,
@@ -208,85 +344,228 @@ export const useStore = create<AppState>()(
         set((s) => ({ compras: [c, ...s.compras], despesas: [despesa, ...s.despesas] }));
         get().updateEstoque(c.sku, c.quantidadeEntrada);
         const uid = get().userId;
-        if (uid) {
-          dbCompras.insert(c, uid).catch(console.error);
-          dbDespesas.insert(despesa, uid).catch(console.error);
-        }
+        if (uid) Promise.all([
+          withRetry(() => dbCompras.insert(c, uid), 'compra'),
+          withRetry(() => dbDespesas.insert(despesa, uid), 'despesa de compra'),
+        ]).catch(() => { set({ compras: prevCompras, despesas: prevDespesas, produtos: prevProdutos }); notifySyncError('Falha ao registrar compra. Revertendo — tente novamente.'); });
       },
       deleteCompra: (id) => {
-        const compra = get().compras.find((c) => c.id === id);
+        const { compras, despesas, produtos } = get();
+        const prevCompras = compras;
+        const prevDespesas = despesas;
+        const prevProdutos = produtos;
+        const compra = compras.find((c) => c.id === id);
         if (compra) get().updateEstoque(compra.sku, -compra.quantidadeEntrada);
         set((s) => ({ compras: s.compras.filter((c) => c.id !== id), despesas: s.despesas.filter((d) => d.compraRef !== id) }));
         const uid = get().userId;
-        if (uid) {
-          dbCompras.delete(id, uid).catch(console.error);
-          dbDespesas.deleteByCompraRef(id, uid).catch(console.error);
+        if (uid) Promise.all([
+          withRetry(() => dbCompras.delete(id, uid), 'compra'),
+          withRetry(() => dbDespesas.deleteByCompraRef(id, uid), 'despesa'),
+        ]).catch(() => { set({ compras: prevCompras, despesas: prevDespesas, produtos: prevProdutos }); notifySyncError('Falha ao excluir compra. Revertendo — tente novamente.'); });
+      },
+
+      updateCompra: (id, data) => {
+        const { compras, produtos } = get();
+        const old = compras.find((c) => c.id === id);
+        if (!old) return;
+        const prevCompras = compras;
+        const prevProdutos = produtos;
+        const merged: Compra = { ...old, ...data };
+        merged.custoTotal   = merged.quantidadeEntrada * merged.custoUnitario;
+        merged.valorParcela = merged.custoTotal / Math.max(1, merged.parcelas);
+        if (merged.sku === old.sku) {
+          const delta = merged.quantidadeEntrada - old.quantidadeEntrada;
+          if (delta !== 0) get().updateEstoque(merged.sku, delta);
+        } else {
+          get().updateEstoque(old.sku, -old.quantidadeEntrada);
+          get().updateEstoque(merged.sku, merged.quantidadeEntrada);
         }
+        set((s) => ({ compras: s.compras.map((c) => c.id === id ? merged : c) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbCompras.upsert(merged, uid), 'compra')
+          .catch(() => { set({ compras: prevCompras, produtos: prevProdutos }); notifySyncError('Falha ao atualizar compra. Revertendo — tente novamente.'); });
+      },
+
+      addAjuste: (a) => {
+        const prevAjustes = get().ajustes;
+        const prevProdutos = get().produtos;
+        set((s) => ({ ajustes: [a, ...s.ajustes] }));
+        const uid = get().userId;
+        const delta = a.tipo === 'entrada' ? a.quantidade : -a.quantidade;
+        if (uid) withRetry(
+          () => dbAjustes.insert({ id: a.id, sku: a.sku, delta, motivo: a.motivo, criadoEm: a.criadoEm }, uid),
+          'ajuste de estoque'
+        ).catch(() => { set({ ajustes: prevAjustes, produtos: prevProdutos }); notifySyncError('Falha ao registrar ajuste. Revertendo — tente novamente.'); });
       },
 
       addDespesa: (d) => {
         const nova = { ...d, id: crypto.randomUUID() };
         set((s) => ({ despesas: [nova, ...s.despesas] }));
         const uid = get().userId;
-        if (uid) dbDespesas.insert(nova, uid).catch(console.error);
+        if (uid) withRetry(() => dbDespesas.insert(nova, uid), 'despesa').catch(syncFail('despesa'));
+      },
+      updateDespesa: (id, data) => {
+        set((s) => ({ despesas: s.despesas.map((d) => d.id === id ? { ...d, ...data } : d) }));
+        const uid = get().userId;
+        const updated = get().despesas.find((d) => d.id === id);
+        if (uid && updated) withRetry(() => dbDespesas.upsert(updated, uid), 'despesa').catch(syncFail('despesa'));
       },
       deleteDespesa: (id) => {
         set((s) => ({ despesas: s.despesas.filter((d) => d.id !== id) }));
         const uid = get().userId;
-        if (uid) dbDespesas.delete(id, uid).catch(console.error);
+        if (uid) withRetry(() => dbDespesas.delete(id, uid), 'despesa').catch(syncFail('despesa'));
       },
 
       addTarefa: (t) => {
         set((s) => ({ tarefas: [...s.tarefas, t] }));
         const uid = get().userId;
-        if (uid) dbTarefas.insert(t, uid).catch(console.error);
+        if (uid) withRetry(() => dbTarefas.insert(t, uid), 'tarefa').catch(syncFail('tarefa'));
       },
       updateTarefa: (id, data) => {
         set((s) => ({ tarefas: s.tarefas.map((t) => (t.id === id ? { ...t, ...data } : t)) }));
         const uid = get().userId;
-        if (uid) dbTarefas.update(id, data, uid).catch(console.error);
+        if (uid) withRetry(() => dbTarefas.update(id, data, uid), 'tarefa').catch(syncFail('tarefa'));
       },
       deleteTarefa: (id) => {
         set((s) => ({ tarefas: s.tarefas.filter((t) => t.id !== id) }));
         const uid = get().userId;
-        if (uid) dbTarefas.delete(id, uid).catch(console.error);
+        if (uid) withRetry(() => dbTarefas.delete(id, uid), 'tarefa').catch(syncFail('tarefa'));
       },
       moveTarefa: (id, coluna) => {
         set((s) => ({ tarefas: s.tarefas.map((t) => (t.id === id ? { ...t, coluna } : t)) }));
         const uid = get().userId;
-        if (uid) dbTarefas.update(id, { coluna }, uid).catch(console.error);
+        if (uid) withRetry(() => dbTarefas.update(id, { coluna }, uid), 'tarefa').catch(syncFail('tarefa'));
       },
 
       addHistorico: (h) => {
         set((s) => ({ historico: [...s.historico, h] }));
         const uid = get().userId;
-        if (uid) dbHistorico.upsert(h, uid).catch(console.error);
+        if (uid) withRetry(() => dbHistorico.upsert(h, uid), 'histórico').catch(syncFail('histórico'));
       },
       updateHistorico: (mesAno, data) => {
         set((s) => ({ historico: s.historico.map((h) => (h.mesAno === mesAno ? { ...h, ...data } : h)) }));
         const uid = get().userId;
         const updated = get().historico.find((h) => h.mesAno === mesAno);
-        if (uid && updated) dbHistorico.upsert(updated, uid).catch(console.error);
+        if (uid && updated) withRetry(() => dbHistorico.upsert(updated, uid), 'histórico').catch(syncFail('histórico'));
+      },
+      deleteHistorico: (mesAno) => {
+        set((s) => ({ historico: s.historico.filter((h) => h.mesAno !== mesAno) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbHistorico.delete(mesAno, uid), 'histórico').catch(syncFail('histórico'));
       },
 
       updateConfiguracoes: (c) => {
         const next = { ...get().configuracoes, ...c };
         set({ configuracoes: next });
         const uid = get().userId;
-        if (uid) dbConfiguracoes.upsert(next, uid).catch(console.error);
+        if (uid) withRetry(() => dbConfiguracoes.upsert(next, uid), 'configurações').catch(syncFail('configurações'));
       },
+      updateCategoriasDesp: (cats) => set({ categoriasDesp: cats }),
+
+      updateCategoriasProd: (cats) => set({ categoriasProd: cats }),
+
+      savePrecificacao: (p) => set((s) => ({ precificacoesSalvas: [p, ...s.precificacoesSalvas] })),
+      deletePrecificacao: (id) => set((s) => ({ precificacoesSalvas: s.precificacoesSalvas.filter((p) => p.id !== id) })),
+
+      setCalculadoraDraft: (d) => set({ calculadoraDraft: d }),
+      setOnboardingCompleted: () => set({ onboardingCompleted: true }),
+      toggleDarkMode: () => {
+        const next = !get().darkMode;
+        set({ darkMode: next });
+        document.documentElement.classList.toggle('dark', next);
+      },
+
+      setLojaFiltro: (loja) => set({ lojaFiltro: loja }),
 
       resetToSeed: () =>
         set({
           produtos: PRODUTOS_SEED,
           pedidos: [],
           compras: COMPRAS_SEED,
+          ajustes: [],
           despesas: [],
           tarefas: TAREFAS_SEED,
           historico: [],
           configuracoes: DEFAULT_CONFIGURACOES,
+          categoriasDesp: DEFAULT_CATEGORIAS_DESP,
+        }),
+
+      resetOperationalData: () =>
+        set({
+          produtos: [],
+          pedidos: [],
+          compras: [],
+          ajustes: [],
+          despesas: [],
+          tarefas: [],
+          historico: [],
+          configuracoes: DEFAULT_CONFIGURACOES,
+          userId: null,
+          isHydrated: false,
+          lojaFiltro: null,
         }),
     }),
-    { name: 'shopee-gestao-store' }
+    {
+      name: 'shopee-gestao-store',
+      version: 2,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const s = persisted as Partial<AppState>;
+        if (fromVersion === 0) {
+          return {
+            darkMode: s.darkMode ?? false,
+            onboardingCompleted: s.onboardingCompleted ?? false,
+            calculadoraDraft: s.calculadoraDraft ?? null,
+            categoriasDesp: s.categoriasDesp ?? DEFAULT_CATEGORIAS_DESP,
+            categoriasProd: s.categoriasProd ?? ['Perfumaria', 'Moto/Bike', 'Eletrônico', 'Acessórios', 'Kit/Combo'],
+            precificacoesSalvas: s.precificacoesSalvas ?? [],
+          };
+        }
+        if (fromVersion === 1) {
+          // v1→v2: remover dados operacionais do localStorage (passam a vir só do Supabase)
+          return {
+            darkMode: s.darkMode ?? false,
+            onboardingCompleted: s.onboardingCompleted ?? false,
+            calculadoraDraft: s.calculadoraDraft ?? null,
+            categoriasDesp: s.categoriasDesp ?? DEFAULT_CATEGORIAS_DESP,
+            categoriasProd: s.categoriasProd ?? ['Perfumaria', 'Moto/Bike', 'Eletrônico', 'Acessórios', 'Kit/Combo'],
+            precificacoesSalvas: s.precificacoesSalvas ?? [],
+          };
+        }
+        return persisted as AppState;
+      },
+      // Persistir apenas preferências de UX.
+      // Dados operacionais (produtos, pedidos, etc.) vêm exclusivamente do Supabase.
+      // categoriasDesp, categoriasProd e precificacoesSalvas são temporários aqui
+      // até serem migrados para o Supabase (PLANO_MESTRE item 9).
+      partialize: (state) => ({
+        darkMode:            state.darkMode,
+        onboardingCompleted: state.onboardingCompleted,
+        calculadoraDraft:    state.calculadoraDraft,
+        categoriasDesp:      state.categoriasDesp,
+        categoriasProd:      state.categoriasProd,
+        precificacoesSalvas: state.precificacoesSalvas,
+        lojaFiltro:          state.lojaFiltro,
+      }),
+      storage: {
+        getItem: (key) => {
+          try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+          } catch {
+            return null;
+          }
+        },
+        setItem: (key, value) => {
+          try {
+            localStorage.setItem(key, JSON.stringify(value));
+          } catch (err) {
+            if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+              notifySyncError('Armazenamento local cheio. Exporte um backup e limpe dados antigos nas Configurações.');
+            }
+          }
+        },
+        removeItem: (key) => localStorage.removeItem(key),
+      },
+    }
   )
 );
