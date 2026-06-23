@@ -1,4 +1,4 @@
-import type { Pedido, RankingProduto, StatusEstoque } from '../types';
+import type { Pedido, Produto, RankingProduto, StatusEstoque } from '../types';
 
 export const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -117,10 +117,37 @@ export function getKPIsMes(pedidos: Pedido[], mes?: string) {
   const doMes = pedidos.filter((p) => p.data.startsWith(agora) && (p.status === 'Concluído' || p.status === 'Enviado'));
   const faturamento = doMes.reduce((s, p) => s + p.receita, 0);
   const pedidosMes = doMes.length;
-  const lucroOp = doMes.reduce((s, p) => s + p.lucroOperacional, 0);
-  const ticket = pedidosMes > 0 ? faturamento / pedidosMes : 0;
-  const das = doMes.reduce((s, p) => s + p.dasImposto, 0);
-  return { faturamento, pedidosMes, lucroOp, ticket, lucroLiquido: lucroOp - das };
+  const lucroOp    = doMes.reduce((s, p) => s + p.lucroOperacional, 0);
+  const ticket     = pedidosMes > 0 ? faturamento / pedidosMes : 0;
+  const das        = doMes.reduce((s, p) => s + p.dasImposto, 0);
+  const custoTotal = doMes.reduce((s, p) => s + p.custoTotal, 0);
+  const adsTotal   = doMes.reduce((s, p) => s + p.adsMarketing, 0);
+  const margem     = faturamento > 0 ? (lucroOp / faturamento) * 100 : 0;
+  const roi        = custoTotal > 0 ? (lucroOp / custoTotal) * 100 : 0;
+  const roas       = adsTotal > 0 ? faturamento / adsTotal : 0;
+  return { faturamento, pedidosMes, lucroOp, ticket, lucroLiquido: lucroOp - das, margem, custoTotal, adsTotal, roi, roas };
+}
+
+export function getMesAnterior(mes: string): string {
+  const [y, m] = mes.split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function getCapitalEstoque(produtos: Produto[]): number {
+  return produtos
+    .filter((p) => (p.ativo ?? true))
+    .reduce((s, p) => s + p.estoqueAtual * p.custoUnitario, 0);
+}
+
+export function getProjecaoMensal(faturamento: number, mes: string): number | null {
+  const hoje = new Date();
+  if (mes !== hoje.toISOString().slice(0, 7)) return null;
+  const diaAtual = hoje.getDate();
+  if (diaAtual < 1) return null;
+  const [y, m] = mes.split('-').map(Number);
+  const diasNoMes = new Date(y, m, 0).getDate();
+  return (faturamento / diaAtual) * diasNoMes;
 }
 
 export function agruparPorDia(pedidos: Pedido[], mes: string) {

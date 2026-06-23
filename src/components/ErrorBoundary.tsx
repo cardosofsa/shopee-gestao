@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </details>
           <button
             onClick={this.reset}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-shopee-500 text-white text-sm font-medium rounded-xl hover:bg-shopee-600 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-core-green text-white text-sm font-medium rounded-xl hover:bg-core-green-h transition-colors"
           >
             <RefreshCw size={14} />
             Tentar novamente

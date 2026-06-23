@@ -13,21 +13,21 @@ function makePedido(overrides: Partial<Pedido> = {}): Pedido {
     numeroPedido: `ORD${_seq}`,
     data: '2026-06-15',
     status: 'Em processo',
-    loja: 'Cardoso e-Shop',
-    sku: 'ALF-118',
-    produto: 'Alfazema 118ml',
+    loja: 'Ambas',
+    sku: 'PROD-001',
+    produto: 'Produto Exemplo A',
     quantidade: 1,
     multiplicadorKit: 1,
     unidadesEstoque: 1,
     receita: 50,
     desconto: 0,
-    custoTotal: 6.08,
+    custoTotal: 10.00,
     taxaShopee: 5,
     dasImposto: 3,
     adsMarketing: 1,
-    lucroOperacional: 34.92,
-    margemSCustoProduto: 574,
-    margemSCustoTotal: 69,
+    lucroOperacional: 31.00,
+    margemSCustoProduto: 400,
+    margemSCustoTotal: 62,
     observacoes: '',
     ...overrides,
   };
@@ -99,11 +99,11 @@ describe('addPedido', () => {
   });
 
   it('preserva todos os campos do pedido', () => {
-    const p = makePedido({ receita: 99.99, sku: 'FITA-BIKE' });
+    const p = makePedido({ receita: 99.99, sku: 'PROD-002' });
     useStore.getState().addPedido(p);
     const stored = useStore.getState().pedidos.find((x) => x.id === p.id);
     expect(stored?.receita).toBe(99.99);
-    expect(stored?.sku).toBe('FITA-BIKE');
+    expect(stored?.sku).toBe('PROD-002');
   });
 });
 
@@ -179,61 +179,61 @@ describe('updatePedidoStatus — efeito no estoque', () => {
   beforeEach(() => {
     useStore.setState({
       produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'FITA-BIKE' ? { ...p, estoqueAtual: FITA_BIKE_INITIAL } : p,
+        p.sku === 'PROD-002' ? { ...p, estoqueAtual: FITA_BIKE_INITIAL } : p,
       ),
     });
   });
 
   it('Em processo → Concluído desconta estoque', () => {
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Em processo', unidadesEstoque: 3 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Em processo', unidadesEstoque: 3 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Concluído');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(FITA_BIKE_INITIAL - 3);
   });
 
   it('Em processo → Enviado desconta estoque', () => {
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Em processo', unidadesEstoque: 2 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Em processo', unidadesEstoque: 2 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Enviado');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(FITA_BIKE_INITIAL - 2);
   });
 
   it('Concluído → Devolvido devolve estoque', () => {
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Concluído', unidadesEstoque: 4 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Concluído', unidadesEstoque: 4 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Devolvido');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(FITA_BIKE_INITIAL + 4);
   });
 
   it('Enviado → Devolvido devolve estoque', () => {
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Enviado', unidadesEstoque: 1 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Enviado', unidadesEstoque: 1 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Devolvido');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(FITA_BIKE_INITIAL + 1);
   });
 
   it('loja Projetando não afeta estoque', () => {
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Em processo', loja: 'Projetando', unidadesEstoque: 5 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Em processo', loja: 'Projetando', unidadesEstoque: 5 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Concluído');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(FITA_BIKE_INITIAL); // sem alteração
   });
 
   it('estoque não vai abaixo de zero', () => {
     useStore.setState({
       produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'FITA-BIKE' ? { ...p, estoqueAtual: 1 } : p,
+        p.sku === 'PROD-002' ? { ...p, estoqueAtual: 1 } : p,
       ),
     });
-    const p = makePedido({ sku: 'FITA-BIKE', status: 'Em processo', unidadesEstoque: 99 });
+    const p = makePedido({ sku: 'PROD-002', status: 'Em processo', unidadesEstoque: 99 });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Concluído');
-    const prod = useStore.getState().produtos.find((x) => x.sku === 'FITA-BIKE');
+    const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
     expect(prod?.estoqueAtual).toBe(0);
   });
 });
@@ -242,31 +242,31 @@ describe('updatePedidoStatus — efeito no estoque', () => {
 
 describe('updateEstoque', () => {
   it('delta positivo aumenta estoque', () => {
-    const before = useStore.getState().produtos.find((p) => p.sku === 'ALF-118')!.estoqueAtual;
-    useStore.getState().updateEstoque('ALF-118', 10);
-    const after = useStore.getState().produtos.find((p) => p.sku === 'ALF-118')!.estoqueAtual;
+    const before = useStore.getState().produtos.find((p) => p.sku === 'PROD-001')!.estoqueAtual;
+    useStore.getState().updateEstoque('PROD-001', 10);
+    const after = useStore.getState().produtos.find((p) => p.sku === 'PROD-001')!.estoqueAtual;
     expect(after).toBe(before + 10);
   });
 
   it('delta negativo diminui estoque', () => {
     useStore.setState({
       produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'ALF-118' ? { ...p, estoqueAtual: 20 } : p,
+        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 20 } : p,
       ),
     });
-    useStore.getState().updateEstoque('ALF-118', -5);
-    const prod = useStore.getState().produtos.find((p) => p.sku === 'ALF-118');
+    useStore.getState().updateEstoque('PROD-001', -5);
+    const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
     expect(prod?.estoqueAtual).toBe(15);
   });
 
   it('estoque não fica negativo', () => {
     useStore.setState({
       produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'ALF-118' ? { ...p, estoqueAtual: 3 } : p,
+        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 3 } : p,
       ),
     });
-    useStore.getState().updateEstoque('ALF-118', -100);
-    const prod = useStore.getState().produtos.find((p) => p.sku === 'ALF-118');
+    useStore.getState().updateEstoque('PROD-001', -100);
+    const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
     expect(prod?.estoqueAtual).toBe(0);
   });
 
@@ -354,5 +354,60 @@ describe('setLojaFiltro', () => {
     useStore.getState().setLojaFiltro('Cardoso e-Shop');
     useStore.getState().setLojaFiltro(null);
     expect(useStore.getState().lojaFiltro).toBeNull();
+  });
+});
+
+// ─── addAjuste ────────────────────────────────────────────────────────────────
+
+describe('addAjuste', () => {
+  it('entrada aumenta estoqueAtual imediatamente', () => {
+    useStore.setState({
+      produtos: useStore.getState().produtos.map((p) =>
+        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p,
+      ),
+    });
+    useStore.getState().addAjuste({
+      id: 'aj1', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'entrada', quantidade: 5,
+      estoqueAntes: 10, estoqueDepois: 15, motivo: 'teste', criadoEm: new Date().toISOString(),
+    });
+    const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
+    expect(prod?.estoqueAtual).toBe(15);
+  });
+
+  it('saida diminui estoqueAtual imediatamente', () => {
+    useStore.setState({
+      produtos: useStore.getState().produtos.map((p) =>
+        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p,
+      ),
+    });
+    useStore.getState().addAjuste({
+      id: 'aj2', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'saida', quantidade: 3,
+      estoqueAntes: 10, estoqueDepois: 7, motivo: 'teste', criadoEm: new Date().toISOString(),
+    });
+    const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
+    expect(prod?.estoqueAtual).toBe(7);
+  });
+
+  it('ajuste é adicionado à lista de ajustes', () => {
+    const before = useStore.getState().ajustes.length;
+    useStore.getState().addAjuste({
+      id: 'aj3', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'entrada', quantidade: 1,
+      estoqueAntes: 10, estoqueDepois: 11, motivo: 'teste', criadoEm: new Date().toISOString(),
+    });
+    expect(useStore.getState().ajustes.length).toBe(before + 1);
+  });
+
+  it('saida não deixa estoque negativo', () => {
+    useStore.setState({
+      produtos: useStore.getState().produtos.map((p) =>
+        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 2 } : p,
+      ),
+    });
+    useStore.getState().addAjuste({
+      id: 'aj4', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'saida', quantidade: 100,
+      estoqueAntes: 2, estoqueDepois: 0, motivo: 'teste', criadoEm: new Date().toISOString(),
+    });
+    const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
+    expect(prod?.estoqueAtual).toBe(0);
   });
 });

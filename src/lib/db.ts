@@ -1,9 +1,24 @@
 import { supabase } from './supabase';
-import type { Produto, Pedido, Compra, Despesa, Tarefa, HistoricoMensal, Configuracoes, Plan, Subscription, Organization, OrgMember, OrgRole, OrgInvite } from '../types';
+import type { Produto, Pedido, Compra, Despesa, Tarefa, HistoricoMensal, Configuracoes, Plan, Subscription, Organization, OrgMember, OrgRole, OrgInvite, ContaPagar, Fornecedor, Campanha, MetaProduto } from '../types';
+
+// ── DB row types (mirrors Supabase schema — snake_case) ───────
+interface DbProduto { sku: string; user_id: string; nome: string; categoria: string; loja: string; custo_unitario: number; estoque_seguranca: number; estoque_atual: number; ativo: boolean; }
+interface DbPedido { id: string; user_id: string; numero_pedido: string; data: string; status: string; loja: string; sku: string; produto: string; quantidade: number; multiplicador_kit: number; unidades_estoque: number; receita: number; desconto: number; custo_total: number; taxa_shopee: number; das_imposto: number; ads_marketing: number; lucro_operacional: number; margem_s_custo_produto: number; margem_s_custo_total: number; nome_cliente?: string | null; observacoes?: string | null; }
+interface DbCompra { id: string; user_id: string; sku: string; produto: string; data: string; quantidade_entrada: number; custo_unitario: number; custo_total: number; fornecedor: string; nf_ref: string; pagamento: string; parcelas: number; valor_parcela: number; loja: string; observacoes: string; }
+interface DbDespesa { id: string; user_id: string; data: string; categoria: string; descricao: string; valor: number; loja: string; compra_ref?: string | null; }
+interface DbTarefa { id: string; user_id: string; titulo: string; descricao: string; coluna: string; posicao: number; data_vencimento?: string | null; prioridade: string; created_at: string; criado_em?: string; }
+interface DbHistorico { mes_ano: string; user_id: string; faturamento_bruto: number; pedidos_qtd: number; ticket_medio: number; unidades_vendidas: number; cmv: number; taxas_shopee: number; das_imposto: number; marketing_ads: number; despesas_operacionais: number; lucro_bruto: number; lucro_operacional: number; lucro_liquido: number; margem_percentual: number; }
+interface DbConfiguracoes { user_id: string; aliquota_das: number; percentual_marketing: number; meta_faturamento?: number | null; meta_margem?: number | null; meta_pedidos?: number | null; meta_lucro?: number | null; nome_empresa?: string | null; tipo_empresa?: string | null; cnpj?: string | null; lojas?: string[] | null; }
+interface DbContaPagar { id: string; user_id: string; descricao: string; categoria: string; valor: number; vencimento: string; status: string; pago_em?: string | null; recorrente: boolean; loja: string; observacoes?: string | null; }
+interface DbFornecedor { id: string; user_id: string; nome: string; telefone?: string | null; email?: string | null; cnpj?: string | null; lead_time_dias: number; termos_pagamento?: string | null; observacoes?: string | null; }
+interface DbCampanha { id: string; user_id: string; nome: string; inicio: string; fim: string; desconto: number; skus: string[]; cor: string; observacoes?: string | null; }
+interface DbMetaProduto { user_id: string; sku: string; mes_ano: string; meta_unidades?: number | null; meta_receita?: number | null; }
+interface DbPlan { id: string; nome: string; limite_pedidos_mes: number | null; limite_skus: number | null; limite_usuarios: number; features: Record<string, boolean>; }
+interface DbMember { org_id: string; user_id: string; email?: string | null; role: string; joined_at: string; }
 
 // ── Mappers ──────────────────────────────────────────────────
 
-const fromProduto = (r: any): Produto => ({
+const fromProduto = (r: DbProduto): Produto => ({
   sku: r.sku, nome: r.nome, categoria: r.categoria, loja: r.loja,
   custoUnitario: Number(r.custo_unitario), estoqueSeguranca: r.estoque_seguranca,
   estoqueAtual: r.estoque_atual, ativo: r.ativo,
@@ -14,8 +29,8 @@ const toProduto = (p: Produto, userId: string) => ({
   estoque_atual: p.estoqueAtual, ativo: p.ativo,
 });
 
-const fromPedido = (r: any): Pedido => ({
-  id: r.id, numeroPedido: r.numero_pedido, data: r.data, status: r.status,
+const fromPedido = (r: DbPedido): Pedido => ({
+  id: r.id, numeroPedido: r.numero_pedido, data: r.data, status: r.status as Pedido['status'],
   loja: r.loja, sku: r.sku, produto: r.produto, quantidade: r.quantidade,
   multiplicadorKit: r.multiplicador_kit, unidadesEstoque: r.unidades_estoque,
   receita: Number(r.receita), desconto: Number(r.desconto), custoTotal: Number(r.custo_total),
@@ -33,7 +48,7 @@ const toPedido = (p: Pedido, userId: string) => ({
   margem_s_custo_produto: p.margemSCustoProduto, margem_s_custo_total: p.margemSCustoTotal,
 });
 
-const fromCompra = (r: any): Compra => ({
+const fromCompra = (r: DbCompra): Compra => ({
   id: r.id, sku: r.sku, produto: r.produto, data: r.data,
   quantidadeEntrada: r.quantidade_entrada, custoUnitario: Number(r.custo_unitario),
   custoTotal: Number(r.custo_total), fornecedor: r.fornecedor, nfRef: r.nf_ref,
@@ -48,7 +63,7 @@ const toCompra = (c: Compra, userId: string) => ({
   loja: c.loja, observacoes: c.observacoes,
 });
 
-const fromDespesa = (r: any): Despesa => ({
+const fromDespesa = (r: DbDespesa): Despesa => ({
   id: r.id, data: r.data, categoria: r.categoria, descricao: r.descricao,
   valor: Number(r.valor), loja: r.loja, compraRef: r.compra_ref ?? undefined,
 });
@@ -58,10 +73,10 @@ const toDespesa = (d: Despesa, userId: string) => ({
 });
 
 // Após migration_v2: coluna renomeada de criado_em → created_at
-const fromTarefa = (r: any): Tarefa => ({
-  id: r.id, titulo: r.titulo, descricao: r.descricao, coluna: r.coluna,
+const fromTarefa = (r: DbTarefa): Tarefa => ({
+  id: r.id, titulo: r.titulo, descricao: r.descricao, coluna: r.coluna as Tarefa['coluna'],
   posicao: r.posicao, dataVencimento: r.data_vencimento ?? undefined,
-  prioridade: r.prioridade, criadoEm: r.created_at ?? r.criado_em,
+  prioridade: r.prioridade as Tarefa['prioridade'], criadoEm: r.created_at ?? r.criado_em ?? '',
 });
 const toTarefa = (t: Tarefa, userId: string) => ({
   id: t.id, user_id: userId, titulo: t.titulo, descricao: t.descricao,
@@ -69,7 +84,7 @@ const toTarefa = (t: Tarefa, userId: string) => ({
   prioridade: t.prioridade, created_at: t.criadoEm,
 });
 
-const fromHistorico = (r: any): HistoricoMensal => ({
+const fromHistorico = (r: DbHistorico): HistoricoMensal => ({
   mesAno: r.mes_ano, faturamentoBruto: Number(r.faturamento_bruto),
   pedidosQtd: r.pedidos_qtd, ticketMedio: Number(r.ticket_medio),
   unidadesVendidas: r.unidades_vendidas, cmv: Number(r.cmv),
@@ -88,14 +103,30 @@ const toHistorico = (h: HistoricoMensal, userId: string) => ({
 });
 
 // DB armazena como decimal (0.02 = 2%); store usa percentagem (2 = 2%)
-const fromConfiguracoes = (r: any): Configuracoes => ({
-  aliquotaDAS: Number(r.aliquota_das) * 100,
+const fromConfiguracoes = (r: DbConfiguracoes): Configuracoes => ({
+  aliquotaDAS:         Number(r.aliquota_das) * 100,
   percentualMarketing: Number(r.percentual_marketing) * 100,
+  metaFaturamento:     r.meta_faturamento !== null ? Number(r.meta_faturamento) : undefined,
+  metaMargem:          r.meta_margem !== null ? Number(r.meta_margem) : undefined,
+  metaPedidos:         r.meta_pedidos ?? undefined,
+  metaLucro:           r.meta_lucro !== null ? Number(r.meta_lucro) : undefined,
+  nomeEmpresa:         r.nome_empresa ?? undefined,
+  tipoEmpresa:         (r.tipo_empresa ?? undefined) as Configuracoes['tipoEmpresa'],
+  cnpj:                r.cnpj ?? undefined,
+  lojas:               r.lojas ?? ['Minha Loja'],
 });
 const toConfiguracoes = (c: Configuracoes, userId: string) => ({
-  user_id: userId,
-  aliquota_das: c.aliquotaDAS / 100,
+  user_id:              userId,
+  aliquota_das:         c.aliquotaDAS / 100,
   percentual_marketing: c.percentualMarketing / 100,
+  meta_faturamento:     c.metaFaturamento ?? null,
+  meta_margem:          c.metaMargem ?? null,
+  meta_pedidos:         c.metaPedidos ?? null,
+  meta_lucro:           c.metaLucro ?? null,
+  nome_empresa:         c.nomeEmpresa ?? null,
+  tipo_empresa:         c.tipoEmpresa ?? null,
+  cnpj:                 c.cnpj ?? null,
+  lojas:                c.lojas,
 });
 
 // ── Produtos ─────────────────────────────────────────────────
@@ -307,13 +338,13 @@ export const dbConfiguracoes = {
 
 // ── Subscriptions / Planos ───────────────────────────────────
 
-const fromPlan = (r: any): Plan => ({
+const fromPlan = (r: DbPlan): Plan => ({
   id: r.id,
   nome: r.nome,
   limitePedidosMes: r.limite_pedidos_mes ?? null,
   limiteSKUs: r.limite_skus ?? null,
   limiteUsuarios: r.limite_usuarios,
-  features: r.features ?? {},
+  features: (r.features ?? {}) as unknown as Plan['features'],
 });
 
 const FREE_PLAN: Plan = {
@@ -387,7 +418,7 @@ export const dbOrganizations = {
 
 // ── CoWork: Members ───────────────────────────────────────────
 
-const fromMember = (r: any): OrgMember => ({
+const fromMember = (r: DbMember): OrgMember => ({
   orgId: r.org_id, userId: r.user_id,
   email: r.email ?? r.user_id,
   role: r.role as OrgRole, joinedAt: r.joined_at,
@@ -452,10 +483,118 @@ export const dbOrgInvites = {
   },
 };
 
+// ── Contas a Pagar ───────────────────────────────────────────
+
+const fromContaPagar = (r: DbContaPagar): ContaPagar => ({
+  id: r.id, descricao: r.descricao, categoria: r.categoria,
+  valor: Number(r.valor), vencimento: r.vencimento,
+  status: r.status as ContaPagar['status'], pagoEm: r.pago_em ?? undefined,
+  recorrente: r.recorrente, loja: r.loja,
+  observacoes: r.observacoes ?? undefined,
+});
+const toContaPagar = (c: ContaPagar, uid: string) => ({
+  id: c.id, user_id: uid, descricao: c.descricao, categoria: c.categoria,
+  valor: c.valor, vencimento: c.vencimento, status: c.status,
+  pago_em: c.pagoEm ?? null, recorrente: c.recorrente, loja: c.loja,
+  observacoes: c.observacoes ?? null,
+});
+
+export const dbContasPagar = {
+  getAll: async (uid: string): Promise<ContaPagar[]> => {
+    const { data } = await supabase.from('contas_pagar').select('*').eq('user_id', uid).order('vencimento');
+    return (data ?? []).map(fromContaPagar);
+  },
+  upsert: async (c: ContaPagar, uid: string) => {
+    await supabase.from('contas_pagar').upsert(toContaPagar(c, uid));
+  },
+  delete: async (id: string, uid: string) => {
+    await supabase.from('contas_pagar').delete().eq('id', id).eq('user_id', uid);
+  },
+};
+
+// ── Fornecedores ─────────────────────────────────────────────
+
+const fromFornecedor = (r: DbFornecedor): Fornecedor => ({
+  id: r.id, nome: r.nome, telefone: r.telefone ?? undefined,
+  email: r.email ?? undefined, cnpj: r.cnpj ?? undefined,
+  leadTimeDias: r.lead_time_dias, termosPagamento: r.termos_pagamento ?? undefined,
+  observacoes: r.observacoes ?? undefined,
+});
+const toFornecedor = (f: Fornecedor, uid: string) => ({
+  id: f.id, user_id: uid, nome: f.nome, telefone: f.telefone ?? null,
+  email: f.email ?? null, cnpj: f.cnpj ?? null,
+  lead_time_dias: f.leadTimeDias, termos_pagamento: f.termosPagamento ?? null,
+  observacoes: f.observacoes ?? null,
+});
+
+export const dbFornecedores = {
+  getAll: async (uid: string): Promise<Fornecedor[]> => {
+    const { data } = await supabase.from('fornecedores').select('*').eq('user_id', uid).order('nome');
+    return (data ?? []).map(fromFornecedor);
+  },
+  upsert: async (f: Fornecedor, uid: string) => {
+    await supabase.from('fornecedores').upsert(toFornecedor(f, uid));
+  },
+  delete: async (id: string, uid: string) => {
+    await supabase.from('fornecedores').delete().eq('id', id).eq('user_id', uid);
+  },
+};
+
+// ── Campanhas ────────────────────────────────────────────────
+
+const fromCampanha = (r: DbCampanha): Campanha => ({
+  id: r.id, nome: r.nome, inicio: r.inicio, fim: r.fim,
+  desconto: Number(r.desconto), skus: r.skus ?? [],
+  cor: r.cor, observacoes: r.observacoes ?? undefined,
+});
+const toCampanha = (c: Campanha, uid: string) => ({
+  id: c.id, user_id: uid, nome: c.nome, inicio: c.inicio, fim: c.fim,
+  desconto: c.desconto, skus: c.skus, cor: c.cor,
+  observacoes: c.observacoes ?? null,
+});
+
+export const dbCampanhas = {
+  getAll: async (uid: string): Promise<Campanha[]> => {
+    const { data } = await supabase.from('campanhas').select('*').eq('user_id', uid).order('inicio', { ascending: false });
+    return (data ?? []).map(fromCampanha);
+  },
+  upsert: async (c: Campanha, uid: string) => {
+    await supabase.from('campanhas').upsert(toCampanha(c, uid));
+  },
+  delete: async (id: string, uid: string) => {
+    await supabase.from('campanhas').delete().eq('id', id).eq('user_id', uid);
+  },
+};
+
+// ── Metas por Produto ────────────────────────────────────────
+
+const fromMetaProduto = (r: DbMetaProduto): MetaProduto => ({
+  sku: r.sku, mesAno: r.mes_ano,
+  metaUnidades: r.meta_unidades ?? undefined,
+  metaReceita: r.meta_receita !== null ? Number(r.meta_receita) : undefined,
+});
+
+export const dbMetasProduto = {
+  getAll: async (uid: string): Promise<MetaProduto[]> => {
+    const { data } = await supabase.from('metas_produto').select('*').eq('user_id', uid);
+    return (data ?? []).map(fromMetaProduto);
+  },
+  upsert: async (m: MetaProduto, uid: string) => {
+    await supabase.from('metas_produto').upsert({
+      user_id: uid, sku: m.sku, mes_ano: m.mesAno,
+      meta_unidades: m.metaUnidades ?? null,
+      meta_receita: m.metaReceita ?? null,
+    });
+  },
+  delete: async (sku: string, mesAno: string, uid: string) => {
+    await supabase.from('metas_produto').delete().eq('user_id', uid).eq('sku', sku).eq('mes_ano', mesAno);
+  },
+};
+
 // ── Carregar todos os dados do usuário ───────────────────────
 
 export async function loadUserData(uid: string) {
-  const [produtos, pedidos, compras, despesas, tarefas, historico, configuracoes] = await Promise.all([
+  const [produtos, pedidos, compras, despesas, tarefas, historico, configuracoes, contasPagar, fornecedores, campanhas, metasProduto] = await Promise.all([
     dbProdutos.getAll(uid),
     dbPedidos.getAll(uid),
     dbCompras.getAll(uid),
@@ -463,8 +602,12 @@ export async function loadUserData(uid: string) {
     dbTarefas.getAll(uid),
     dbHistorico.getAll(uid),
     dbConfiguracoes.get(uid),
+    dbContasPagar.getAll(uid),
+    dbFornecedores.getAll(uid),
+    dbCampanhas.getAll(uid),
+    dbMetasProduto.getAll(uid),
   ]);
-  return { produtos, pedidos, compras, despesas, tarefas, historico, configuracoes };
+  return { produtos, pedidos, compras, despesas, tarefas, historico, configuracoes, contasPagar, fornecedores, campanhas, metasProduto };
 }
 
 // ── Gravar seed inicial quando usuário é novo ────────────────

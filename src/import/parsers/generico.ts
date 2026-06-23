@@ -1,6 +1,6 @@
 import type { Pedido, Produto } from '../../types';
 
-export function parseGenerico(rows: any[], produtos: Produto[]): Pedido[] {
+export function parseGenerico(rows: any[], produtos: Produto[], lojaDefault: string): Pedido[] {
   return rows
     .filter((r) => !!(r['Nº Pedido'] || r['numeroPedido']))
     .map((r, i): Pedido => {
@@ -17,7 +17,7 @@ export function parseGenerico(rows: any[], produtos: Produto[]): Pedido[] {
         numeroPedido: String(r['Nº Pedido'] || r['numeroPedido'] || `IMP-${i}`),
         data: String(r['Data'] || r['data'] || new Date().toISOString().slice(0, 10)),
         status: (r['Status'] || r['status'] || 'Concluído') as Pedido['status'],
-        loja: String(r['Loja'] || r['loja'] || 'Cardoso e-Shop'),
+        loja: String(r['Loja'] || r['loja'] || lojaDefault),
         sku, produto: String(r['Produto'] || r['produto'] || prod?.nome || ''),
         quantidade: parseInt(String(r['Qtd.'] || r['quantidade'] || 1)) || 1,
         multiplicadorKit: parseInt(String(r['Mult. Kit'] || r['multiplicador_kit'] || 1)) || 1,

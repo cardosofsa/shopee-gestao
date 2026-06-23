@@ -66,7 +66,7 @@ const FEATURE_ROWS: { key: keyof PlanFeatures; label: string; tooltip?: string }
 const PLAN_STYLES: Record<string, { icon: React.ReactNode; badge: string; ring: string; btn: string }> = {
   free:            { icon: <Zap size={16} />,      badge: 'bg-slate-100 text-slate-600 border-slate-200',         ring: 'ring-slate-200',    btn: 'btn-secondary' },
   starter:         { icon: <Zap size={16} />,      badge: 'bg-sky-50 text-sky-700 border-sky-200',                ring: 'ring-sky-200',      btn: 'bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors' },
-  pro:             { icon: <Crown size={16} />,    badge: 'bg-shopee-50 text-shopee-700 border-shopee-200',        ring: 'ring-shopee-400',   btn: 'btn-primary' },
+  pro:             { icon: <Crown size={16} />,    badge: 'bg-core-green/5 text-core-green border-core-green/20',        ring: 'ring-core-green/40',   btn: 'btn-primary' },
   max:             { icon: <Crown size={16} />,    badge: 'bg-amber-50 text-amber-700 border-amber-200',           ring: 'ring-amber-300',    btn: 'bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors' },
   cowork_starter:  { icon: <Users size={16} />,    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',     ring: 'ring-emerald-300',  btn: 'bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors' },
   cowork_titanium: { icon: <Sparkles size={16} />, badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',        ring: 'ring-indigo-300',   btn: 'bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors' },
@@ -109,7 +109,7 @@ export default function Planos() {
               key={plan.id}
               className={`card p-5 flex flex-col gap-4 ring-2 transition-all ${
                 isCurrent ? style.ring : 'ring-transparent'
-              } ${plan.destaque ? 'border-shopee-300 dark:border-shopee-700' : ''}`}
+              } ${plan.destaque ? 'border-core-green/30 dark:border-core-green/30' : ''}`}
             >
               {/* Plan header */}
               <div className="space-y-1">
@@ -123,7 +123,7 @@ export default function Planos() {
                     </span>
                   )}
                   {plan.destaque && !isCurrent && (
-                    <span className="text-xs text-shopee-600 dark:text-shopee-400 font-medium">Mais popular</span>
+                    <span className="text-xs text-core-green dark:text-core-green font-medium">Mais popular</span>
                   )}
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 text-xs">{plan.descricao}</p>
@@ -194,7 +194,7 @@ export default function Planos() {
               <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                 <th className="px-4 py-3 text-left text-slate-500 dark:text-slate-400 font-medium w-48">Feature</th>
                 {PLANS.map((p) => (
-                  <th key={p.id} className={`px-3 py-3 text-center font-semibold ${p.id === currentPlanId ? 'text-shopee-600 dark:text-shopee-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                  <th key={p.id} className={`px-3 py-3 text-center font-semibold ${p.id === currentPlanId ? 'text-core-green dark:text-core-green' : 'text-slate-600 dark:text-slate-300'}`}>
                     {p.nome}
                   </th>
                 ))}
@@ -244,7 +244,7 @@ export default function Planos() {
 
       <p className="text-center text-xs text-slate-400 dark:text-slate-500">
         Precisa de algo diferente?{' '}
-        <a href="mailto:contato@exemplo.com" className="text-shopee-500 hover:underline">Entre em contato.</a>
+        <a href="mailto:contato@exemplo.com" className="text-core-green hover:underline">Entre em contato.</a>
         {' '}Cobrança em R$ (BRL). Cancele quando quiser com export completo dos dados.
       </p>
     </div>

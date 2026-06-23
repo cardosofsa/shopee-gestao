@@ -48,7 +48,7 @@ function ToastCard({
         {item.action && (
           <button
             onClick={() => { item.action!.onClick(); onDismiss(item.id); }}
-            className="mt-1.5 text-xs font-semibold text-shopee-500 hover:text-shopee-600 transition-colors"
+            className="mt-1.5 text-xs font-semibold text-core-green hover:text-core-green transition-colors"
           >
             {item.action.label}
           </button>

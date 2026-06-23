@@ -22,11 +22,10 @@ export function mapearSkuUpseller(skuRaw: string): { sku: string; kit: number } 
   return { sku: s, kit: 1 };
 }
 
-export function mapearLojaUpseller(loja: string): string {
+export function mapearLojaUpseller(loja: string, lojas: string[]): string {
   const l = loja.toLowerCase();
-  if (l.includes('cardoso'))    return 'Cardoso e-Shop';
-  if (l.includes('projetando')) return 'Projetando';
-  return loja;
+  const match = lojas.find((s) => l.includes(s.toLowerCase().split(' ')[0]));
+  return match ?? lojas[0] ?? loja;
 }
 
 export function parseUpseller(rows: any[], produtos: Produto[], configuracoes: Configuracoes): Pedido[] {
@@ -44,18 +43,21 @@ export function parseUpseller(rows: any[], produtos: Produto[], configuracoes: C
       const lucro   = receita - custo - das - ads;
       const dataRaw = String(r['Hora do Pagamento'] || '').slice(0, 10);
       const data    = /^\d{4}-\d{2}-\d{2}$/.test(dataRaw) ? dataRaw : new Date().toISOString().slice(0, 10);
+      const nomeCliente = String(
+        r['Nome do Comprador'] || r['Destinatário'] || r['Nome do Destinatário'] || r['Nome do usuário'] || ''
+      ).trim() || undefined;
       return {
         id: crypto.randomUUID(),
         numeroPedido: String(r['Nº de Pedido da Plataforma'] || `IMP-${i}`), data,
         status: mapearStatus(String(r['Estado do Pedido'] || '')),
-        loja: mapearLojaUpseller(String(r['Nome da Loja no UpSeller'] || '')),
+        loja: mapearLojaUpseller(String(r['Nome da Loja no UpSeller'] || ''), configuracoes.lojas),
         sku, produto: prod?.nome || String(r['SKU'] || '').slice(0, 60),
         quantidade: qtd, multiplicadorKit: kit, unidadesEstoque: unid,
         receita, desconto: 0, custoTotal: custo, taxaShopee: 0, dasImposto: das, adsMarketing: ads,
         lucroOperacional: lucro,
         margemSCustoProduto: custo > 0 ? (lucro / custo) * 100 : 0,
         margemSCustoTotal:   receita > 0 ? (lucro / receita) * 100 : 0,
-        observacoes: '',
+        observacoes: '', nomeCliente,
       };
     });
 }

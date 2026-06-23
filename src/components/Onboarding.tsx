@@ -74,7 +74,7 @@ export default function Onboarding() {
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-shopee-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-core-green rounded-xl flex items-center justify-center flex-shrink-0">
               <Rocket size={18} className="text-white" />
             </div>
             <div>
@@ -96,7 +96,7 @@ export default function Onboarding() {
         {/* Progress bar */}
         <div className="h-1 bg-slate-100 dark:bg-slate-700">
           <div
-            className="h-full bg-shopee-500 transition-all duration-500"
+            className="h-full bg-core-green transition-all duration-500"
             style={{ width: `${(completedCount / steps.length) * 100}%` }}
           />
         </div>
@@ -136,7 +136,7 @@ export default function Onboarding() {
                 <Link
                   to={step.href}
                   onClick={setOnboardingCompleted}
-                  className="flex-shrink-0 self-center flex items-center gap-1 text-xs font-medium text-shopee-500 hover:text-shopee-600 whitespace-nowrap"
+                  className="flex-shrink-0 self-center flex items-center gap-1 text-xs font-medium text-core-green hover:text-core-green whitespace-nowrap"
                 >
                   {step.action} <ArrowRight size={11} />
                 </Link>
@@ -150,7 +150,7 @@ export default function Onboarding() {
           {allDone ? (
             <button
               onClick={setOnboardingCompleted}
-              className="w-full py-2.5 bg-shopee-500 hover:bg-shopee-600 text-white text-sm font-semibold rounded-xl transition-colors"
+              className="w-full py-2.5 bg-core-green hover:bg-core-green-h text-white text-sm font-semibold rounded-xl transition-colors"
             >
               Tudo pronto — ir para o Dashboard
             </button>

@@ -8,7 +8,7 @@ export interface Produto {
   sku: string;
   nome: string;
   categoria: string;
-  loja: 'Cardoso e-Shop' | 'Projetando' | 'Ambas';
+  loja: string;
   custoUnitario: number;
   estoqueSeguranca: number;
   estoqueAtual: number;
@@ -36,6 +36,7 @@ export interface Pedido {
   margemSCustoProduto: number;
   margemSCustoTotal: number;
   observacoes?: string;
+  nomeCliente?: string;
 }
 
 export interface AjusteEstoque {
@@ -73,7 +74,7 @@ export interface Despesa {
   categoria: CategoriaDespesa;
   descricao: string;
   valor: number;
-  loja: 'Cardoso e-Shop' | 'Projetando' | 'Ambas';
+  loja: string;
   compraRef?: string;
 }
 
@@ -110,9 +111,19 @@ export interface Configuracoes {
   percentualMarketing: number;
   metaFaturamento?: number;
   metaMargem?: number;
+  metaPedidos?: number;
+  metaLucro?: number;
   nomeEmpresa?: string;
   tipoEmpresa?: 'MEI' | 'ME' | 'EPP';
   cnpj?: string;
+  lojas: string[];
+}
+
+export interface MetaProduto {
+  sku: string;
+  mesAno: string;
+  metaUnidades?: number;
+  metaReceita?: number;
 }
 
 export interface PrecificacaoSalva {
@@ -206,6 +217,17 @@ export interface Subscription {
   periodoFim: string | null;
 }
 
+export interface Fornecedor {
+  id: string;
+  nome: string;
+  telefone?: string;
+  email?: string;
+  cnpj?: string;
+  leadTimeDias: number;
+  termosPagamento?: string;
+  observacoes?: string;
+}
+
 export interface KPIs {
   faturamentoMes: number;
   pedidosMes: number;
@@ -213,6 +235,30 @@ export interface KPIs {
   despesasMes: number;
   ticketMedioMes: number;
   lucroLiquidoMes: number;
+}
+
+export interface ContaPagar {
+  id: string;
+  descricao: string;
+  categoria: string;
+  valor: number;
+  vencimento: string;
+  status: 'pendente' | 'pago';
+  pagoEm?: string;
+  recorrente: boolean;
+  loja: string;
+  observacoes?: string;
+}
+
+export interface Campanha {
+  id: string;
+  nome: string;
+  inicio: string;
+  fim: string;
+  desconto: number;
+  skus: string[];
+  cor: string;
+  observacoes?: string;
 }
 
 export interface RankingProduto {

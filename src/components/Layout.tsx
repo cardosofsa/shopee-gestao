@@ -1,53 +1,26 @@
 import { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, ShoppingCart, Package, KanbanSquare,
-  TrendingUp, Calculator, Settings, Store, Receipt, LogOut,
-  ChevronsLeft, Menu, Moon, Sun, Keyboard, CalendarDays,
-  Loader2, CloudUpload, Sparkles, Users,
+  Store, LogOut,
+  ChevronsLeft, Menu, Moon, Keyboard, Search,
+  Loader2, CheckCircle2, Sun,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ToastProvider, useToast } from './Toast';
 import { setSyncErrorListener, setSyncStateListener, setLimitListener, type SyncState } from '../lib/sync';
 import { useStore } from '../store';
 import { useRealtime } from '../hooks/useRealtime';
+import { useAlertas } from '../hooks/useAlertas';
+import { CommandPalette } from './CommandPalette';
+import { SIDEBAR_GROUPS, type NavItem } from '../navigation';
 
-// ─── Nav structure ────────────────────────────────────────────────────────────
-
-type NavItemDef = { to: string; label: string; icon: React.ElementType; end?: boolean };
-type NavGroup   = { label?: string; items: NavItemDef[] };
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true }],
-  },
-  {
-    label: 'Operações',
-    items: [
-      { to: '/vendas',     label: 'Vendas',     icon: ShoppingCart },
-      { to: '/estoque',    label: 'Estoque',    icon: Package },
-      { to: '/financeiro', label: 'Financeiro', icon: TrendingUp },
-      { to: '/despesas',   label: 'Despesas',   icon: Receipt },
-    ],
-  },
-  {
-    label: 'Ferramentas',
-    items: [
-      { to: '/kanban',      label: 'Tarefas',     icon: KanbanSquare },
-      { to: '/calendario',  label: 'Calendário',  icon: CalendarDays },
-      { to: '/calculadora', label: 'Calculadora', icon: Calculator },
-      { to: '/equipe',      label: 'Equipe',      icon: Users },
-    ],
-  },
-];
-
-const CONFIG_ITEM  = { to: '/configs', label: 'Configurações', icon: Settings };
-const PLANOS_ITEM  = { to: '/planos',  label: 'Planos',        icon: Sparkles };
+// NavItem with badge resolved to a number (after dynamic count is applied)
+type ResolvedNavItem = Omit<NavItem, 'badge'> & { badge?: number };
 
 
 const SHORTCUTS = [
   { key: '⌘B / Ctrl+B', desc: 'Colapsar/expandir sidebar' },
-  { key: '⌘K / Ctrl+K', desc: 'Ir para Dashboard' },
+  { key: '⌘K / Ctrl+K', desc: 'Busca global (Command Palette)' },
   { key: '?',            desc: 'Atalhos de teclado' },
   { key: 'Esc',          desc: 'Fechar modal / painel' },
   { key: 'D',            desc: 'Dashboard' },
@@ -98,7 +71,7 @@ function SyncDot({ state }: { state: SyncState }) {
   if (state === 'idle') return null;
   return state === 'syncing'
     ? <Loader2 size={12} className="text-slate-500 animate-spin flex-shrink-0" />
-    : <CloudUpload size={12} className="text-emerald-500 flex-shrink-0" />;
+    : <CheckCircle2 size={12} className="text-core-green flex-shrink-0" />;
 }
 
 function Tip({ label }: { label: string }) {
@@ -117,7 +90,7 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[300] p-4" onClick={onClose}>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-5">
-          <Keyboard size={16} className="text-shopee-500" />
+          <Keyboard size={16} className="text-core-green" />
           <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Atalhos de teclado</h3>
         </div>
         <div className="space-y-2.5">
@@ -139,12 +112,11 @@ function ShortcutsModal({ onClose }: { onClose: () => void }) {
 function LayoutSkeleton() {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
-      <aside className="hidden md:flex flex-col flex-shrink-0 w-[260px] bg-[#0d1117]">
+      <aside className="hidden md:flex flex-col flex-shrink-0 w-[260px] bg-core-black">
         <div className="flex items-center gap-3 px-5 h-[60px] border-b border-white/[0.06]">
-          <div className="w-8 h-8 bg-white/10 rounded-xl animate-pulse" />
+          <div className="w-6 h-6 rounded-full border border-white/20 animate-pulse flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
-            <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
-            <div className="h-2.5 bg-white/5 rounded animate-pulse w-1/2" />
+            <div className="h-3 bg-white/10 rounded animate-pulse w-16" />
           </div>
         </div>
         <nav className="flex-1 p-3 space-y-0.5">
@@ -155,7 +127,7 @@ function LayoutSkeleton() {
       </aside>
       <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-7 h-7 border-2 border-shopee-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-7 h-7 border-2 border-core-green border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-slate-400">Carregando…</p>
         </div>
       </div>
@@ -168,11 +140,11 @@ function LayoutSkeleton() {
 function NavItem({
   item, collapsed, onNavigate,
 }: {
-  item: NavItemDef;
+  item: ResolvedNavItem;
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
-  const { to, label, icon: Icon, end } = item;
+  const { to, label, icon: Icon, end, badge } = item;
   return (
     <div className="relative group">
       <NavLink
@@ -184,13 +156,29 @@ function NavItem({
             collapsed ? 'justify-center w-10 h-9 mx-auto' : 'px-3 h-9'
           } ${
             isActive
-              ? 'bg-shopee-500 text-white shadow-md shadow-shopee-500/25'
+              ? 'bg-core-green text-white shadow-md shadow-core-green/20'
               : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]'
           }`
         }
       >
-        <Icon size={16} className="flex-shrink-0" />
-        {!collapsed && <span className="truncate">{label}</span>}
+        <span className="relative flex-shrink-0">
+          <Icon size={16} />
+          {badge != null && badge > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center leading-none">
+              {badge > 9 ? '9+' : badge}
+            </span>
+          )}
+        </span>
+        {!collapsed && (
+          <span className="flex-1 flex items-center justify-between truncate">
+            <span className="truncate">{label}</span>
+            {badge != null && badge > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[9px] font-bold leading-none">
+                {badge > 99 ? '99+' : badge}
+              </span>
+            )}
+          </span>
+        )}
       </NavLink>
       {collapsed && <Tip label={label} />}
     </div>
@@ -205,19 +193,34 @@ function SidebarNav({
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
+  const alertas       = useAlertas();
+  const criticosCount = alertas.filter((a) => a.severidade === 'critico').length;
+
   return (
-    <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-0.5 scrollbar-thin">
-      {NAV_GROUPS.map((group, gi) => (
-        <div key={gi} className={gi > 0 ? 'pt-2' : ''}>
+    <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 scrollbar-thin">
+      {SIDEBAR_GROUPS.map((group, gi) => (
+        <div key={gi} className={gi > 0 ? 'pt-3' : ''}>
           {group.label && !collapsed && (
-            <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-600 select-none">
+            <p className="px-3 pt-0.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-600 select-none">
               {group.label}
             </p>
           )}
-          {gi > 0 && collapsed && <div className="w-5 h-px bg-white/[0.08] mx-auto mb-1.5" />}
-          {group.items.map((item) => (
-            <NavItem key={item.to} item={item} collapsed={collapsed} onNavigate={onNavigate} />
-          ))}
+          {gi > 0 && collapsed && <div className="w-5 h-px bg-white/[0.08] mx-auto mb-2" />}
+          <div className="space-y-0.5">
+            {group.items.map((item) => {
+              const resolved: ResolvedNavItem = item.badge === 'alertas'
+                ? { ...item, badge: criticosCount || undefined }
+                : { ...item, badge: undefined };
+              return (
+                <NavItem
+                  key={item.to}
+                  item={resolved}
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+              );
+            })}
+          </div>
         </div>
       ))}
     </nav>
@@ -247,50 +250,11 @@ function SidebarFooter({
   if (collapsed) {
     return (
       <div className="border-t border-white/[0.06] py-3 flex flex-col items-center gap-2">
-        {/* Planos */}
-        <div className="relative group">
-          <NavLink
-            to={PLANOS_ITEM.to}
-            className={({ isActive }) =>
-              `flex items-center justify-center w-10 h-9 rounded-lg transition-all duration-150 ${
-                isActive
-                  ? 'bg-shopee-500 text-white shadow-md shadow-shopee-500/25'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]'
-              }`
-            }
-          >
-            <Sparkles size={16} />
-          </NavLink>
-          <Tip label="Planos" />
-        </div>
-
-        {/* Config */}
-        <div className="relative group">
-          <NavLink
-            to={CONFIG_ITEM.to}
-            className={({ isActive }) =>
-              `flex items-center justify-center w-10 h-9 rounded-lg transition-all duration-150 ${
-                isActive
-                  ? 'bg-shopee-500 text-white shadow-md shadow-shopee-500/25'
-                  : 'text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]'
-              }`
-            }
-          >
-            <Settings size={16} />
-          </NavLink>
-          <Tip label="Configurações" />
-        </div>
-
-        <div className="w-5 h-px bg-white/[0.08] mx-auto" />
-
-        {/* Sync dot */}
         {syncState !== 'idle' && (
           <div className="flex items-center justify-center w-10 h-5">
             <SyncDot state={syncState} />
           </div>
         )}
-
-        {/* Dark mode */}
         <div className="relative group">
           <button
             onClick={onToggleDark}
@@ -300,8 +264,6 @@ function SidebarFooter({
           </button>
           <Tip label={darkMode ? 'Modo claro' : 'Modo escuro'} />
         </div>
-
-        {/* User avatar */}
         <div className="relative group">
           <button
             onClick={onSignOut}
@@ -316,44 +278,35 @@ function SidebarFooter({
   }
 
   return (
-    <div className="border-t border-white/[0.06]">
-      {/* Planos + Config items */}
-      <div className="px-3 pt-3 pb-2 space-y-0.5">
-        <NavItem item={PLANOS_ITEM} collapsed={false} />
-        <NavItem item={CONFIG_ITEM} collapsed={false} />
-      </div>
-
-      {/* User card */}
-      <div className="px-3 pb-3">
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 font-bold text-[11px] text-white shadow-inner">
-            {initials}
-          </div>
-          <p className="text-slate-300 text-xs truncate flex-1 leading-tight">{username}</p>
-          <SyncDot state={syncState} />
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            <button
-              onClick={onToggleDark}
-              title={darkMode ? 'Modo claro' : 'Modo escuro'}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all duration-150"
-            >
-              {darkMode ? <Sun size={13} /> : <Moon size={13} />}
-            </button>
-            <button
-              onClick={onShowShortcuts}
-              title="Atalhos"
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all duration-150"
-            >
-              <Keyboard size={13} />
-            </button>
-            <button
-              onClick={onSignOut}
-              title="Sair"
-              className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
+    <div className="border-t border-white/[0.06] px-3 py-3">
+      <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
+        <div className="w-7 h-7 rounded-lg bg-white/[0.1] flex items-center justify-center flex-shrink-0 font-medium text-[11px] text-slate-300 ring-1 ring-white/[0.08]">
+          {initials}
+        </div>
+        <p className="text-slate-300 text-xs truncate flex-1 leading-tight">{username}</p>
+        <SyncDot state={syncState} />
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <button
+            onClick={onToggleDark}
+            title={darkMode ? 'Modo claro' : 'Modo escuro'}
+            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all duration-150"
+          >
+            {darkMode ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
+          <button
+            onClick={onShowShortcuts}
+            title="Atalhos"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/[0.08] transition-all duration-150"
+          >
+            <Keyboard size={13} />
+          </button>
+          <button
+            onClick={onSignOut}
+            title="Sair"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+          >
+            <LogOut size={13} />
+          </button>
         </div>
       </div>
     </div>
@@ -382,6 +335,7 @@ export default function Layout() {
   const [collapsed,     setCollapsed]     = useState(() => localStorage.getItem('sb-collapsed') === '1');
   const [mobileOpen,    setMobileOpen]    = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showPalette,   setShowPalette]   = useState(false);
   const [syncState,     setSyncState]     = useState<SyncState>('idle');
 
   useEffect(() => {
@@ -409,8 +363,9 @@ export default function Layout() {
       const tag = (ev.target as HTMLElement).tagName;
       const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ev.target as HTMLElement).isContentEditable;
       if ((ev.metaKey || ev.ctrlKey) && ev.key === 'b') { ev.preventDefault(); toggle(); return; }
+      if ((ev.metaKey || ev.ctrlKey) && ev.key === 'k') { ev.preventDefault(); setShowPalette((v) => !v); return; }
       if (ev.key === '?' && !inInput) { setShowShortcuts((v) => !v); return; }
-      if (ev.key === 'Escape') { setShowShortcuts(false); setMobileOpen(false); return; }
+      if (ev.key === 'Escape') { setShowPalette(false); setShowShortcuts(false); setMobileOpen(false); return; }
       if (inInput) return;
       const path = NAV_KEYS[ev.key.toLowerCase()];
       if (path) window.location.href = path;
@@ -434,6 +389,7 @@ export default function Layout() {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
 
       {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+      {showPalette  && <CommandPalette onClose={() => setShowPalette(false)} />}
 
       {/* Mobile backdrop */}
       {mobileOpen && (
@@ -441,14 +397,12 @@ export default function Layout() {
       )}
 
       {/* Mobile sidebar */}
-      <aside className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-[#0d1117] flex flex-col transition-transform duration-300 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-core-black flex flex-col transition-transform duration-300 ease-in-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 h-[60px] border-b border-white/[0.06] flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10">
-            <Store size={15} className="text-white" />
-          </div>
+          <div className="w-7 h-7 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-white font-semibold text-sm leading-tight tracking-tight">Gestão Shopee</p>
+            <p className="text-white font-light tracking-[0.28em] text-[13px] select-none">CORE</p>
             <p className="text-slate-500 text-[11px] truncate mt-0.5">{email}</p>
           </div>
         </div>
@@ -467,7 +421,7 @@ export default function Layout() {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className={`hidden md:flex flex-col flex-shrink-0 bg-[#0d1117] relative transition-all duration-300 ease-in-out overflow-hidden ${collapsed ? 'w-[64px]' : 'w-[260px]'}`}>
+      <aside className={`hidden md:flex flex-col flex-shrink-0 bg-core-black relative transition-all duration-300 ease-in-out overflow-hidden ${collapsed ? 'w-[64px]' : 'w-[260px]'}`}>
 
         {/* Header */}
         {collapsed ? (
@@ -476,18 +430,14 @@ export default function Layout() {
             title="Expandir sidebar (⌘B)"
             className="flex items-center justify-center h-[60px] border-b border-white/[0.06] flex-shrink-0 w-full hover:bg-white/[0.04] transition-colors group"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10 group-hover:scale-95 transition-transform duration-150">
-              <Store size={15} className="text-white" />
-            </div>
+            <div className="w-7 h-7 rounded-full border border-white/30 group-hover:border-white/60 transition-colors duration-150" />
           </button>
         ) : (
           <div className="flex items-center gap-3 px-4 h-[60px] border-b border-white/[0.06] flex-shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-shopee-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-shopee-500/30 ring-1 ring-white/10">
-              <Store size={15} className="text-white" />
-            </div>
+            <div className="w-7 h-7 rounded-full border border-white/40 flex-shrink-0" />
             <div className="min-w-0 overflow-hidden flex-1">
-              <p className="text-white font-semibold text-sm leading-tight tracking-tight whitespace-nowrap">Gestão Shopee</p>
-              <p className="text-slate-500 text-[11px] whitespace-nowrap truncate mt-0.5">Painel do vendedor</p>
+              <p className="text-white font-light tracking-[0.28em] text-[13px] whitespace-nowrap select-none">CORE</p>
+              <p className="text-slate-500 text-[11px] whitespace-nowrap truncate mt-0.5">Business OS</p>
             </div>
             <button
               onClick={toggle}
@@ -497,6 +447,26 @@ export default function Layout() {
               <ChevronsLeft size={15} />
             </button>
           </div>
+        )}
+
+        {/* Fake search — principal mecanismo de descoberta do ⌘K */}
+        {collapsed ? (
+          <button
+            onClick={() => setShowPalette(true)}
+            title="Busca global (⌘K)"
+            className="mx-auto my-2 flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.06] transition-colors"
+          >
+            <Search size={15} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowPalette(true)}
+            className="mx-3 my-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] transition-colors group text-left"
+          >
+            <Search size={13} className="text-slate-500 group-hover:text-slate-300 flex-shrink-0 transition-colors" />
+            <span className="flex-1 text-[12px] text-slate-500 group-hover:text-slate-300 transition-colors">Buscar…</span>
+            <kbd className="text-[10px] px-1.5 py-0.5 border border-white/10 rounded text-slate-600 group-hover:text-slate-400 transition-colors">⌘K</kbd>
+          </button>
         )}
 
         <SidebarNav collapsed={collapsed} />
@@ -523,12 +493,18 @@ export default function Layout() {
           >
             <Menu size={20} />
           </button>
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-6 h-6 bg-gradient-to-br from-shopee-400 to-orange-600 rounded-lg flex items-center justify-center">
-              <Store size={12} className="text-white" />
-            </div>
-            <span className="text-slate-800 dark:text-slate-100 font-semibold text-sm">Gestão Shopee</span>
+          <div className="flex items-center gap-2.5 flex-1">
+            <div className="w-6 h-6 rounded-full border border-slate-300 dark:border-slate-600 flex-shrink-0" />
+            <span className="text-slate-800 dark:text-slate-100 font-light tracking-[0.25em] text-[13px] select-none">CORE</span>
           </div>
+          <button
+            onClick={() => setShowPalette(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-core-green/50 hover:text-core-green transition-colors"
+          >
+            <Search size={13} />
+            <span className="hidden xs:inline">Buscar</span>
+            <kbd className="hidden sm:inline text-[10px] px-1 border border-slate-200 dark:border-slate-700 rounded">⌘K</kbd>
+          </button>
           <button onClick={toggleDark} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg transition-colors">
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </button>
@@ -548,7 +524,7 @@ export default function Layout() {
                 onClick={() => setLojaFiltro(l)}
                 className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors whitespace-nowrap ${
                   lojaFiltro === l
-                    ? 'bg-shopee-500 text-white'
+                    ? 'bg-core-green text-white'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                 }`}
               >

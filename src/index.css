@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -17,10 +25,11 @@
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
     background-color: #f8fafc;
-    color: #1e293b;
+    color: #111111;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s, color 0.2s;
   }
 
@@ -66,7 +75,7 @@
   }
 
   .btn-primary {
-    @apply bg-shopee-500 hover:bg-shopee-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2 text-sm;
+    @apply bg-core-green hover:bg-core-green-h text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2 text-sm;
   }
 
   .btn-secondary {
@@ -79,13 +88,49 @@
   }
 
   .input {
-    @apply w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shopee-400 focus:border-transparent bg-white text-slate-900 placeholder-slate-400;
+    @apply w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-core-green/40 focus:border-core-green bg-white text-slate-900 placeholder-slate-400;
     @apply dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-500;
   }
 
   .select {
-    @apply w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-shopee-400 focus:border-transparent bg-white text-slate-900;
+    @apply w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-core-green/40 focus:border-core-green bg-white text-slate-900;
     @apply dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100;
+  }
+
+  /* ── Variantes de botão extras ─────────────────────────────────────── */
+  .btn-ghost {
+    @apply bg-transparent hover:bg-slate-100 text-slate-600 font-medium px-4 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2 text-sm;
+    @apply dark:hover:bg-white/[0.06] dark:text-slate-400;
+  }
+
+  .btn-icon {
+    @apply flex items-center justify-center rounded-lg transition-colors duration-150 text-slate-500 hover:text-slate-800 hover:bg-slate-100;
+    @apply dark:hover:text-slate-200 dark:hover:bg-white/[0.06];
+    @apply w-8 h-8;
+  }
+
+  /* ── Seção / Page header ────────────────────────────────────────────── */
+  .page-title {
+    @apply text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight;
+  }
+
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500;
+  }
+
+  /* ── Divisor ────────────────────────────────────────────────────────── */
+  .divider {
+    @apply h-px bg-slate-200 dark:bg-slate-700;
+  }
+
+  /* ── Tooltip padrão ─────────────────────────────────────────────────── */
+  .tooltip {
+    @apply pointer-events-none absolute z-50 px-2.5 py-1.5 bg-core-black text-white text-xs font-medium rounded-lg whitespace-nowrap shadow-core-lg;
+  }
+
+  /* ── Estados de loading inline ──────────────────────────────────────── */
+  .skeleton {
+    @apply bg-slate-200 dark:bg-slate-700 rounded animate-pulse;
   }
 
   .badge-ok {
@@ -120,5 +165,34 @@
   .status-devolvido {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700;
     @apply dark:bg-red-900/40 dark:text-red-300;
+  }
+
+  /* ── Table standard ─────────────────────────────────────────────────────────── */
+  .table-root {
+    @apply w-full text-sm;
+  }
+
+  .table-th {
+    @apply px-4 py-2.5 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap;
+  }
+
+  .table-th-right {
+    @apply px-4 py-2.5 text-right text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap;
+  }
+
+  .table-body {
+    @apply divide-y divide-slate-100 dark:divide-slate-700/50;
+  }
+
+  .table-tr {
+    @apply hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors;
+  }
+
+  .table-td {
+    @apply px-4 py-3 text-sm text-slate-700 dark:text-slate-300;
+  }
+
+  .table-td-muted {
+    @apply px-4 py-3 text-sm text-slate-400 dark:text-slate-500;
   }
 }

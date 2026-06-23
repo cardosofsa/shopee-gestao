@@ -74,7 +74,7 @@ function CalendarGrid({ tarefas, viewMonth, filterPrior }: {
         return (
           <div key={i} className={`min-h-28 p-2 flex flex-col gap-1 ${valid ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-800/40'}`}>
             <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full self-end flex-shrink-0 ${
-              isToday ? 'bg-shopee-500 text-white' :
+              isToday ? 'bg-core-green text-white' :
               valid ? 'text-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'
             }`}>
               {valid ? day : ''}
@@ -204,7 +204,7 @@ export default function Calendario() {
                       ? opt.key === 'alta'  ? 'bg-red-500 text-white'
                       : opt.key === 'media' ? 'bg-amber-500 text-white'
                       : opt.key === 'baixa' ? 'bg-slate-500 text-white'
-                      : 'bg-shopee-500 text-white'
+                      : 'bg-core-green text-white'
                       : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                   }`}>
                   {opt.label}
@@ -261,7 +261,7 @@ export default function Calendario() {
             </div>
           )}
           {agenda.length > 0 && (
-            <Link to="/kanban" className="text-xs text-shopee-500 hover:text-shopee-600 font-medium mt-1">
+            <Link to="/kanban" className="text-xs text-core-green hover:text-core-green font-medium mt-1">
               Ver no Kanban →
             </Link>
           )}

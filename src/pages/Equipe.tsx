@@ -68,7 +68,7 @@ function CreateOrg() {
     <div className="p-6 max-w-3xl mx-auto space-y-8">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Users size={20} className="text-shopee-500" />
+          <Users size={20} className="text-core-green" />
           Equipe
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -78,8 +78,8 @@ function CreateOrg() {
 
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-shopee-50 dark:bg-shopee-900/30 flex items-center justify-center">
-            <Building2 size={18} className="text-shopee-500" />
+          <div className="w-10 h-10 rounded-xl bg-core-green/5 dark:bg-core-green/10 flex items-center justify-center">
+            <Building2 size={18} className="text-core-green" />
           </div>
           <div>
             <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Criar organização</p>
@@ -92,12 +92,12 @@ function CreateOrg() {
             onChange={(e) => setNome(e.target.value)}
             placeholder="Nome da organização"
             maxLength={80}
-            className="flex-1 h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-shopee-500"
+            className="flex-1 h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-core-green/40"
           />
           <button
             type="submit"
             disabled={saving || !nome.trim()}
-            className="px-4 h-9 bg-shopee-500 text-white text-sm font-medium rounded-lg hover:bg-shopee-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            className="px-4 h-9 bg-core-green text-white text-sm font-medium rounded-lg hover:bg-core-green-h disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Criar
@@ -125,7 +125,7 @@ function PlanGate() {
         </p>
         <a
           href="/planos"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-shopee-500 text-white text-sm font-semibold rounded-xl hover:bg-shopee-600 transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-core-green text-white text-sm font-semibold rounded-xl hover:bg-core-green-h transition-colors"
         >
           Ver planos
         </a>
@@ -265,7 +265,7 @@ export default function Equipe() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Users size={20} className="text-shopee-500" />
+            <Users size={20} className="text-core-green" />
             Equipe
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -293,9 +293,9 @@ export default function Equipe() {
                 onChange={(e) => setEditNome(e.target.value)}
                 maxLength={80}
                 autoFocus
-                className="flex-1 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-shopee-500"
+                className="flex-1 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-core-green/40"
               />
-              <button type="submit" disabled={savingNome} className="px-3 h-8 bg-shopee-500 text-white text-xs font-medium rounded-lg hover:bg-shopee-600 disabled:opacity-50 transition-colors">
+              <button type="submit" disabled={savingNome} className="px-3 h-8 bg-core-green text-white text-xs font-medium rounded-lg hover:bg-core-green-h disabled:opacity-50 transition-colors">
                 {savingNome ? <Loader2 size={12} className="animate-spin" /> : 'Salvar'}
               </button>
               <button type="button" onClick={() => setEditingNome(false)} className="px-3 h-8 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
@@ -308,7 +308,7 @@ export default function Equipe() {
               <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex-1">{organization.nome}</span>
               <button
                 onClick={() => { setEditNome(organization.nome); setEditingNome(true); }}
-                className="text-xs text-slate-400 hover:text-shopee-500 transition-colors"
+                className="text-xs text-slate-400 hover:text-core-green transition-colors"
               >
                 Renomear
               </button>
@@ -325,7 +325,7 @@ export default function Equipe() {
         <div className="divide-y divide-slate-100 dark:divide-slate-700">
           {orgMembers.map((m) => (
             <div key={m.userId} className="flex items-center gap-3 px-5 py-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-shopee-400 to-orange-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-core-green to-emerald-400 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
                 {(m.email?.[0] ?? '?').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -339,7 +339,7 @@ export default function Equipe() {
                   <select
                     value={m.role}
                     onChange={(e) => handleRoleChange(m.userId, e.target.value as OrgRole)}
-                    className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-shopee-500"
+                    className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-core-green/40"
                   >
                     {MANAGEABLE_ROLES.map((r) => (
                       <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -366,7 +366,7 @@ export default function Equipe() {
       {canManage && orgMembers.length < planLimit && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-            <Plus size={15} className="text-shopee-500" />
+            <Plus size={15} className="text-core-green" />
             Convidar colaborador
           </p>
           <form onSubmit={handleInvite} className="flex flex-wrap gap-3">
@@ -376,12 +376,12 @@ export default function Equipe() {
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="email@exemplo.com"
               required
-              className="flex-1 min-w-[200px] h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-shopee-500"
+              className="flex-1 min-w-[200px] h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-core-green/40"
             />
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as OrgRole)}
-              className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-shopee-500"
+              className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-core-green/40"
             >
               {MANAGEABLE_ROLES.map((r) => (
                 <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -390,7 +390,7 @@ export default function Equipe() {
             <button
               type="submit"
               disabled={sending}
-              className="px-4 h-9 bg-shopee-500 text-white text-sm font-medium rounded-lg hover:bg-shopee-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+              className="px-4 h-9 bg-core-green text-white text-sm font-medium rounded-lg hover:bg-core-green-h disabled:opacity-50 transition-colors flex items-center gap-2"
             >
               {sending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               Convidar

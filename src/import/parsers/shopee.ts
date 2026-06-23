@@ -23,7 +23,7 @@ export function mapearSKU(variantSku: string, principalSku: string): { sku: stri
   return { sku: p || s || variantSku, kit: kit || 1 };
 }
 
-export function parseShopeeNativo(rows: any[], produtos: Produto[]): Pedido[] {
+export function parseShopeeNativo(rows: any[], produtos: Produto[], lojaDefault: string): Pedido[] {
   return rows
     .filter((r) => !!r['ID do pedido'] && !String(r['Status do pedido'] || '').toLowerCase().includes('cancelado'))
     .map((r, i): Pedido => {
@@ -45,17 +45,20 @@ export function parseShopeeNativo(rows: any[], produtos: Produto[]): Pedido[] {
       const lucro    = receita - desconto - custo - taxa;
       const dataRaw  = String(r['Data de criação do pedido'] || r['Hora do pagamento do pedido'] || '').slice(0, 10);
       const data     = /^\d{4}-\d{2}-\d{2}$/.test(dataRaw) ? dataRaw : new Date().toISOString().slice(0, 10);
+      const nomeCliente = String(
+        r['Nome do Destinatário'] || r['Nome do usuário'] || r['Nome do Comprador'] || ''
+      ).trim() || undefined;
       return {
         id: crypto.randomUUID(),
         numeroPedido: String(r['ID do pedido'] || `IMP-${i}`), data,
         status: mapearStatus(String(r['Status do pedido'] || '')),
-        loja: 'Cardoso e-Shop', sku, produto: prod?.nome || nomeRaw.slice(0, 60),
+        loja: lojaDefault, sku, produto: prod?.nome || nomeRaw.slice(0, 60),
         quantidade: qtd, multiplicadorKit: kit, unidadesEstoque: unid,
         receita, desconto, custoTotal: custo, taxaShopee: taxa, dasImposto: 0, adsMarketing: 0,
         lucroOperacional: lucro,
         margemSCustoProduto: custo > 0 ? (lucro / custo) * 100 : 0,
         margemSCustoTotal:   receita > 0 ? (lucro / receita) * 100 : 0,
-        observacoes: '',
+        observacoes: '', nomeCliente,
       };
     });
 }

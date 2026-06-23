@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Produto, Pedido, Compra, AjusteEstoque, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa, PrecificacaoSalva, CalculadoraDraft, Subscription, Organization, OrgMember } from '../types';
-import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, dbAjustes, dbSubscriptions, dbOrganizations, dbOrgMembers, loadUserData, seedUserData } from '../lib/db';
+import type { Produto, Pedido, Compra, AjusteEstoque, Despesa, Tarefa, HistoricoMensal, Configuracoes, ColunaTarefa, PrecificacaoSalva, CalculadoraDraft, Subscription, Organization, OrgMember, ContaPagar, Fornecedor, Campanha, MetaProduto } from '../types';
+import { dbPedidos, dbProdutos, dbCompras, dbDespesas, dbTarefas, dbHistorico, dbConfiguracoes, dbAjustes, dbSubscriptions, dbOrganizations, dbOrgMembers, dbContasPagar, dbFornecedores, dbCampanhas, dbMetasProduto, loadUserData, seedUserData } from '../lib/db';
 import { withRetry, notifySyncError, notifyLimitReached } from '../lib/sync';
 
 function syncFail(label: string) {
@@ -11,43 +11,25 @@ function syncFail(label: string) {
   };
 }
 
-const DEFAULT_CONFIGURACOES: Configuracoes = { aliquotaDAS: 0, percentualMarketing: 2 };
+const DEFAULT_CONFIGURACOES: Configuracoes = { aliquotaDAS: 0, percentualMarketing: 2, lojas: ['Minha Loja'] };
 
 const PRODUTOS_SEED: Produto[] = [
-  { sku: 'ALF-118', nome: 'Alfazema 118ml', categoria: 'Perfumaria', loja: 'Cardoso e-Shop', custoUnitario: 6.08, estoqueSeguranca: 50, estoqueAtual: 266, ativo: true },
-  { sku: 'ALF-500', nome: 'Alfazema 500ml', categoria: 'Perfumaria', loja: 'Cardoso e-Shop', custoUnitario: 4.70, estoqueSeguranca: 10, estoqueAtual: 0, ativo: true },
-  { sku: 'FITA-PCX', nome: 'Fita Antifuro PCX', categoria: 'Moto/Bike', loja: 'Ambas', custoUnitario: 10.00, estoqueSeguranca: 10, estoqueAtual: 0, ativo: true },
-  { sku: 'FITA-BIKE', nome: 'Fita Antifuro Bike', categoria: 'Moto/Bike', loja: 'Ambas', custoUnitario: 10.00, estoqueSeguranca: 10, estoqueAtual: 0, ativo: true },
-  { sku: 'FITA-MOTO', nome: 'Fita Antifuro Moto', categoria: 'Moto/Bike', loja: 'Ambas', custoUnitario: 28.00, estoqueSeguranca: 15, estoqueAtual: 10, ativo: true },
-  { sku: 'CJ13-3', nome: 'Carregador Veicular TIPO-C', categoria: 'Eletrônico', loja: 'Cardoso e-Shop', custoUnitario: 18.50, estoqueSeguranca: 5, estoqueAtual: 0, ativo: true },
-  { sku: 'CJ13-2', nome: 'Carregador Veicular IOS', categoria: 'Eletrônico', loja: 'Cardoso e-Shop', custoUnitario: 18.50, estoqueSeguranca: 5, estoqueAtual: 1, ativo: true },
-  { sku: 'L14-4', nome: 'Base Carregador Veicular', categoria: 'Eletrônico', loja: 'Cardoso e-Shop', custoUnitario: 14.50, estoqueSeguranca: 5, estoqueAtual: 1, ativo: true },
-  { sku: 'CANMAD', nome: 'Canivete Madeira', categoria: 'Acessórios', loja: 'Cardoso e-Shop', custoUnitario: 12.00, estoqueSeguranca: 5, estoqueAtual: 0, ativo: true },
-  { sku: 'BAINHAC', nome: 'Bainha de Couro', categoria: 'Acessórios', loja: 'Ambas', custoUnitario: 3.00, estoqueSeguranca: 10, estoqueAtual: 0, ativo: true },
-  { sku: 'BAINHAC-PREMIUM', nome: 'Bainha de Couro Premium', categoria: 'Acessórios', loja: 'Cardoso e-Shop', custoUnitario: 5.00, estoqueSeguranca: 5, estoqueAtual: 0, ativo: true },
-  { sku: 'CANMAD-BAINHAC', nome: 'Kit Canivete + Bainha', categoria: 'Kit/Combo', loja: 'Cardoso e-Shop', custoUnitario: 15.00, estoqueSeguranca: 5, estoqueAtual: 0, ativo: true },
+  { sku: 'PROD-001', nome: 'Produto Exemplo A', categoria: 'Categoria 1', loja: 'Ambas', custoUnitario: 10.00, estoqueSeguranca: 20, estoqueAtual: 50, ativo: true },
+  { sku: 'PROD-002', nome: 'Produto Exemplo B', categoria: 'Categoria 1', loja: 'Ambas', custoUnitario: 25.00, estoqueSeguranca: 10, estoqueAtual: 30, ativo: true },
+  { sku: 'PROD-003', nome: 'Produto Exemplo C', categoria: 'Categoria 2', loja: 'Ambas', custoUnitario: 8.00, estoqueSeguranca: 15, estoqueAtual: 0, ativo: true },
+  { sku: 'KIT-001', nome: 'Kit Exemplo (A + B)', categoria: 'Kit/Combo', loja: 'Ambas', custoUnitario: 33.00, estoqueSeguranca: 5, estoqueAtual: 10, ativo: true },
 ];
 
-
 const COMPRAS_SEED: Compra[] = [
-  { id: 'c1', sku: 'ALF-118', produto: 'Alfazema 118ml', data: '2026-06-18', quantidadeEntrada: 240, custoUnitario: 6.08, custoTotal: 1459.20, fornecedor: 'Binho Cosméticos', nfRef: '852', pagamento: 'Pix', parcelas: 1, valorParcela: 1459.20, loja: 'Cardoso e-Shop', observacoes: '' },
-  { id: 'c2', sku: 'ALF-118', produto: 'Alfazema 118ml', data: '2026-06-17', quantidadeEntrada: 267, custoUnitario: 6.08, custoTotal: 1623.14, fornecedor: 'Binho Cosméticos', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 1623.14, loja: 'Cardoso e-Shop', observacoes: '' },
-  { id: 'c3', sku: 'ALF-500', produto: 'Alfazema 500ml', data: '2026-06-18', quantidadeEntrada: 36, custoUnitario: 4.70, custoTotal: 169.20, fornecedor: 'Binho Cosméticos', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 169.20, loja: 'Cardoso e-Shop', observacoes: '' },
-  { id: 'c4', sku: 'FITA-PCX', produto: 'Fita Antifuro PCX', data: '2026-06-18', quantidadeEntrada: 16, custoUnitario: 10.00, custoTotal: 160.00, fornecedor: 'Lindomar', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 160.00, loja: 'Ambas', observacoes: '' },
-  { id: 'c5', sku: 'FITA-BIKE', produto: 'Fita Antifuro Bike', data: '2026-06-18', quantidadeEntrada: 9, custoUnitario: 10.00, custoTotal: 90.00, fornecedor: 'Lindomar', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 90.00, loja: 'Ambas', observacoes: '' },
-  { id: 'c6', sku: 'FITA-MOTO', produto: 'Fita Antifuro Moto', data: '2026-06-18', quantidadeEntrada: 21, custoUnitario: 28.00, custoTotal: 588.00, fornecedor: 'Lindomar', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 588.00, loja: 'Ambas', observacoes: '' },
-  { id: 'c7', sku: 'CJ13-3', produto: 'Carregador Veicular TIPO-C', data: '2026-06-18', quantidadeEntrada: 2, custoUnitario: 18.50, custoTotal: 37.00, fornecedor: 'Tony', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 37.00, loja: 'Cardoso e-Shop', observacoes: '' },
-  { id: 'c8', sku: 'BAINHAC', produto: 'Bainha de Couro', data: '2026-06-18', quantidadeEntrada: 17, custoUnitario: 3.00, custoTotal: 51.00, fornecedor: 'Sertão', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 51.00, loja: 'Ambas', observacoes: '' },
-  { id: 'c9', sku: 'CANMAD-BAINHAC', produto: 'Kit Canivete + Bainha', data: '2026-06-18', quantidadeEntrada: 3, custoUnitario: 15.00, custoTotal: 45.00, fornecedor: 'Helen', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 45.00, loja: 'Cardoso e-Shop', observacoes: '' },
-  { id: 'c10', sku: 'FITA-MOTO', produto: 'Fita Antifuro Moto', data: '2026-06-18', quantidadeEntrada: 10, custoUnitario: 28.00, custoTotal: 280.00, fornecedor: 'Lindomar', nfRef: '00', pagamento: 'Pix', parcelas: 1, valorParcela: 280.00, loja: 'Ambas', observacoes: '' },
+  { id: 'seed-c1', sku: 'PROD-001', produto: 'Produto Exemplo A', data: new Date().toISOString().slice(0, 10), quantidadeEntrada: 50, custoUnitario: 10.00, custoTotal: 500.00, fornecedor: 'Fornecedor Demo', nfRef: '', pagamento: 'Pix', parcelas: 1, valorParcela: 500.00, loja: 'Minha Loja', observacoes: '' },
+  { id: 'seed-c2', sku: 'PROD-002', produto: 'Produto Exemplo B', data: new Date().toISOString().slice(0, 10), quantidadeEntrada: 30, custoUnitario: 25.00, custoTotal: 750.00, fornecedor: 'Fornecedor Demo', nfRef: '', pagamento: 'Pix', parcelas: 1, valorParcela: 750.00, loja: 'Minha Loja', observacoes: '' },
 ];
 
 const TAREFAS_SEED: Tarefa[] = [
-  { id: 't1', titulo: 'Embalar pedidos do dia', descricao: 'Embalar todos os pedidos com status Enviado', coluna: 'todo', posicao: 0, prioridade: 'alta', criadoEm: '2026-06-18T08:00:00Z' },
-  { id: 't2', titulo: 'Comprar fita adesiva', descricao: 'Estoque de fita adesiva acabando', coluna: 'todo', posicao: 1, prioridade: 'media', criadoEm: '2026-06-18T08:00:00Z' },
-  { id: 't3', titulo: 'Atualizar anúncio ALF-118', descricao: 'Foto nova do produto chegou', coluna: 'in_progress', posicao: 0, prioridade: 'media', criadoEm: '2026-06-17T10:00:00Z' },
-  { id: 't4', titulo: 'Repor FITA-MOTO', descricao: 'Estoque crítico - contatar Lindomar', coluna: 'in_progress', posicao: 1, prioridade: 'alta', criadoEm: '2026-06-17T09:00:00Z' },
-  { id: 't5', titulo: 'Cadastrar novo SKU carregador', descricao: 'Carregador USB-C 65W chegou', coluna: 'done', posicao: 0, prioridade: 'baixa', criadoEm: '2026-06-16T14:00:00Z' },
+  { id: 'seed-t1', titulo: 'Embalar pedidos do dia', descricao: 'Separar e embalar pedidos com status Enviado', coluna: 'todo', posicao: 0, prioridade: 'alta', criadoEm: new Date().toISOString() },
+  { id: 'seed-t2', titulo: 'Verificar estoque mínimo', descricao: 'Conferir produtos abaixo do ponto de reposição', coluna: 'todo', posicao: 1, prioridade: 'media', criadoEm: new Date().toISOString() },
+  { id: 'seed-t3', titulo: 'Atualizar fotos dos anúncios', descricao: 'Melhorar imagens dos produtos principais', coluna: 'in_progress', posicao: 0, prioridade: 'media', criadoEm: new Date().toISOString() },
+  { id: 'seed-t4', titulo: 'Cadastrar produtos iniciais', descricao: 'Importar catálogo de produtos no sistema', coluna: 'done', posicao: 0, prioridade: 'alta', criadoEm: new Date().toISOString() },
 ];
 
 const DEFAULT_CATEGORIAS_DESP = ['Embalagem', 'Combustível', 'Insumos', 'Mercadoria', 'Marketing', 'Outro'];
@@ -67,7 +49,7 @@ interface AppState {
 
   // Auth / Supabase
   setUserId: (id: string | null) => void;
-  hydrate: (data: { produtos: Produto[]; pedidos: Pedido[]; compras: Compra[]; despesas: Despesa[]; tarefas: Tarefa[]; historico: HistoricoMensal[]; configuracoes: Configuracoes | null }) => void;
+  hydrate: (data: { produtos: Produto[]; pedidos: Pedido[]; compras: Compra[]; despesas: Despesa[]; tarefas: Tarefa[]; historico: HistoricoMensal[]; configuracoes: Configuracoes | null; contasPagar?: ContaPagar[]; fornecedores?: Fornecedor[]; campanhas?: Campanha[]; metasProduto?: MetaProduto[] }) => void;
   loadAndHydrate: (userId: string) => Promise<void>;
 
   // Actions - Pedidos
@@ -147,6 +129,34 @@ interface AppState {
   setOrgMembers: (members: OrgMember[]) => void;
   loadOrganization: (userId: string) => Promise<void>;
 
+  // Orçamentos por categoria de despesa
+  orcamentosDesp: Record<string, number>;
+  setOrcamentoDesp: (categoria: string, valor: number) => void;
+
+  // Actions - Contas a Pagar
+  contasPagar: ContaPagar[];
+  addContaPagar: (c: ContaPagar) => void;
+  updateContaPagar: (id: string, data: Partial<ContaPagar>) => void;
+  deleteContaPagar: (id: string) => void;
+  pagarConta: (id: string, pagoEm?: string) => void;
+
+  // Actions - Fornecedores
+  fornecedores: Fornecedor[];
+  addFornecedor: (f: Fornecedor) => void;
+  updateFornecedor: (id: string, data: Partial<Fornecedor>) => void;
+  deleteFornecedor: (id: string) => void;
+
+  // Actions - Campanhas
+  campanhas: Campanha[];
+  addCampanha: (c: Campanha) => void;
+  updateCampanha: (id: string, data: Partial<Campanha>) => void;
+  deleteCampanha: (id: string) => void;
+
+  // Metas por produto
+  metasProduto: MetaProduto[];
+  upsertMetaProduto: (m: MetaProduto) => void;
+  deleteMetaProduto: (sku: string, mesAno: string) => void;
+
   // Seed
   resetToSeed: () => void;
 
@@ -177,6 +187,11 @@ export const useStore = create<AppState>()(
       organization: null,
       orgMembers: [],
       darkMode: false,
+      orcamentosDesp: {},
+      contasPagar: [],
+      fornecedores: [],
+      campanhas: [],
+      metasProduto: [],
 
       setUserId: (id) => set({ userId: id }),
 
@@ -188,6 +203,10 @@ export const useStore = create<AppState>()(
         tarefas: data.tarefas.length > 0 ? data.tarefas : TAREFAS_SEED,
         historico: data.historico,
         configuracoes: data.configuracoes ?? DEFAULT_CONFIGURACOES,
+        contasPagar: data.contasPagar ?? [],
+        fornecedores: data.fornecedores ?? [],
+        campanhas: data.campanhas ?? [],
+        metasProduto: data.metasProduto ?? [],
         isHydrated: true,
       }),
 
@@ -439,9 +458,10 @@ export const useStore = create<AppState>()(
       addAjuste: (a) => {
         const prevAjustes = get().ajustes;
         const prevProdutos = get().produtos;
-        set((s) => ({ ajustes: [a, ...s.ajustes] }));
-        const uid = get().userId;
         const delta = a.tipo === 'entrada' ? a.quantidade : -a.quantidade;
+        set((s) => ({ ajustes: [a, ...s.ajustes] }));
+        get().updateEstoque(a.sku, delta);
+        const uid = get().userId;
         if (uid) withRetry(
           () => dbAjustes.insert({ id: a.id, sku: a.sku, delta, motivo: a.motivo, criadoEm: a.criadoEm }, uid),
           'ajuste de estoque'
@@ -540,6 +560,81 @@ export const useStore = create<AppState>()(
         let members: OrgMember[] = [];
         if (org) members = await dbOrgMembers.getByOrg(org.id).catch(() => []);
         set({ organization: org, orgMembers: members });
+      },
+
+      setOrcamentoDesp: (categoria, valor) =>
+        set((s) => ({ orcamentosDesp: { ...s.orcamentosDesp, [categoria]: valor } })),
+
+      addContaPagar: (c) => {
+        set((s) => ({ contasPagar: [...s.contasPagar, c] }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbContasPagar.upsert(c, uid), 'conta a pagar').catch(syncFail('conta a pagar'));
+      },
+      updateContaPagar: (id, data) => {
+        set((s) => ({ contasPagar: s.contasPagar.map((c) => (c.id === id ? { ...c, ...data } : c)) }));
+        const uid = get().userId;
+        const updated = get().contasPagar.find((c) => c.id === id);
+        if (uid && updated) withRetry(() => dbContasPagar.upsert(updated, uid), 'conta a pagar').catch(syncFail('conta a pagar'));
+      },
+      deleteContaPagar: (id) => {
+        set((s) => ({ contasPagar: s.contasPagar.filter((c) => c.id !== id) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbContasPagar.delete(id, uid), 'conta a pagar').catch(syncFail('conta a pagar'));
+      },
+      pagarConta: (id, pagoEm) => {
+        const pagoEmVal = pagoEm ?? new Date().toISOString().slice(0, 10);
+        set((s) => ({ contasPagar: s.contasPagar.map((c) => c.id === id ? { ...c, status: 'pago', pagoEm: pagoEmVal } : c) }));
+        const uid = get().userId;
+        const updated = get().contasPagar.find((c) => c.id === id);
+        if (uid && updated) withRetry(() => dbContasPagar.upsert(updated, uid), 'conta a pagar').catch(syncFail('conta a pagar'));
+      },
+
+      addFornecedor: (f) => {
+        set((s) => ({ fornecedores: [...s.fornecedores, f] }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbFornecedores.upsert(f, uid), 'fornecedor').catch(syncFail('fornecedor'));
+      },
+      updateFornecedor: (id, data) => {
+        set((s) => ({ fornecedores: s.fornecedores.map((f) => (f.id === id ? { ...f, ...data } : f)) }));
+        const uid = get().userId;
+        const updated = get().fornecedores.find((f) => f.id === id);
+        if (uid && updated) withRetry(() => dbFornecedores.upsert(updated, uid), 'fornecedor').catch(syncFail('fornecedor'));
+      },
+      deleteFornecedor: (id) => {
+        set((s) => ({ fornecedores: s.fornecedores.filter((f) => f.id !== id) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbFornecedores.delete(id, uid), 'fornecedor').catch(syncFail('fornecedor'));
+      },
+
+      addCampanha: (c) => {
+        set((s) => ({ campanhas: [...s.campanhas, c] }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbCampanhas.upsert(c, uid), 'campanha').catch(syncFail('campanha'));
+      },
+      updateCampanha: (id, data) => {
+        set((s) => ({ campanhas: s.campanhas.map((c) => (c.id === id ? { ...c, ...data } : c)) }));
+        const uid = get().userId;
+        const updated = get().campanhas.find((c) => c.id === id);
+        if (uid && updated) withRetry(() => dbCampanhas.upsert(updated, uid), 'campanha').catch(syncFail('campanha'));
+      },
+      deleteCampanha: (id) => {
+        set((s) => ({ campanhas: s.campanhas.filter((c) => c.id !== id) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbCampanhas.delete(id, uid), 'campanha').catch(syncFail('campanha'));
+      },
+
+      upsertMetaProduto: (m) => {
+        set((s) => {
+          const rest = s.metasProduto.filter((x) => !(x.sku === m.sku && x.mesAno === m.mesAno));
+          return { metasProduto: [...rest, m] };
+        });
+        const uid = get().userId;
+        if (uid) withRetry(() => dbMetasProduto.upsert(m, uid), 'meta de produto').catch(syncFail('meta de produto'));
+      },
+      deleteMetaProduto: (sku, mesAno) => {
+        set((s) => ({ metasProduto: s.metasProduto.filter((x) => !(x.sku === sku && x.mesAno === mesAno)) }));
+        const uid = get().userId;
+        if (uid) withRetry(() => dbMetasProduto.delete(sku, mesAno, uid), 'meta de produto').catch(syncFail('meta de produto'));
       },
 
       resetToSeed: () =>

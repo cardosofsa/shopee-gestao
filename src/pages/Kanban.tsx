@@ -82,7 +82,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
 
   if (editing) {
     return (
-      <div ref={setNodeRef} style={style} className="bg-white dark:bg-slate-800 rounded-xl border-2 border-shopee-300 p-3 shadow-sm space-y-2">
+      <div ref={setNodeRef} style={style} className="bg-white dark:bg-slate-800 rounded-xl border-2 border-core-green/30 p-3 shadow-sm space-y-2">
         <input className="input text-sm" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus
           onKeyDown={(e) => e.key === 'Enter' && saveEdit()} />
         <textarea className="input text-xs resize-none" rows={2} placeholder="Descrição (opcional)"
@@ -120,7 +120,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className={`font-medium text-sm leading-snug cursor-pointer hover:text-shopee-600 ${isDone ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-slate-100'}`}
+            <p className={`font-medium text-sm leading-snug cursor-pointer hover:text-core-green ${isDone ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-slate-100'}`}
               onClick={() => setEditing(true)}>
               {tarefa.titulo}
             </p>
@@ -155,7 +155,7 @@ function TarefaCard({ tarefa, colIndex }: { tarefa: Tarefa; colIndex: number }) 
         )}
         {colIndex < COLUNAS.length - 1 && (
           <button onClick={() => moveTarefa(tarefa.id, COLUNAS[colIndex + 1].id)}
-            className="flex items-center gap-1 text-xs text-slate-400 hover:text-shopee-500 transition-colors ml-auto">
+            className="flex items-center gap-1 text-xs text-slate-400 hover:text-core-green transition-colors ml-auto">
             {COLUNAS[colIndex + 1].label} <ChevronRight size={12} />
           </button>
         )}
@@ -187,7 +187,7 @@ function AddCard({ coluna, onDone }: { coluna: ColunaTarefa; onDone: () => void 
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-shopee-300 p-3 shadow-sm space-y-2">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-core-green/30 p-3 shadow-sm space-y-2">
       <input className="input text-sm" placeholder="Título da tarefa…" value={titulo}
         onChange={(e) => setTitulo(e.target.value)} autoFocus
         onKeyDown={(e) => e.key === 'Enter' && save()} />
@@ -298,7 +298,7 @@ export default function Kanban() {
                   ? opt.key === 'alta'  ? 'bg-red-500 text-white'
                   : opt.key === 'media' ? 'bg-amber-500 text-white'
                   : opt.key === 'baixa' ? 'bg-slate-500 text-white'
-                  : 'bg-shopee-500 text-white'
+                  : 'bg-core-green text-white'
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
               }`}>
               {opt.label}
@@ -333,7 +333,7 @@ export default function Kanban() {
                       </button>
                     )}
                     <button onClick={() => setAddingIn(addingIn === col.id ? null : col.id)}
-                      className="text-slate-400 hover:text-shopee-500 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+                      className="text-slate-400 hover:text-core-green transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
                       <Plus size={16} />
                     </button>
                   </div>

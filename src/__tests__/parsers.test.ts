@@ -17,7 +17,7 @@ const PRODUTOS: Produto[] = [
   { sku: 'BAINHAC',   nome: 'Bainha de Couro',     categoria: 'Acessórios', loja: 'Ambas',          custoUnitario: 3.00,  estoqueSeguranca: 10, estoqueAtual: 0,   ativo: true },
 ];
 
-const CONF: Configuracoes = { aliquotaDAS: 6, percentualMarketing: 2 };
+const CONF: Configuracoes = { aliquotaDAS: 6, percentualMarketing: 2, lojas: ['Cardoso e-Shop', 'Projetando'] };
 
 // ─── mapearStatus ─────────────────────────────────────────────────────────────
 
@@ -118,14 +118,15 @@ describe('mapearSkuUpseller', () => {
 // ─── mapearLojaUpseller ───────────────────────────────────────────────────────
 
 describe('mapearLojaUpseller', () => {
+  const lojas = ['Cardoso e-Shop', 'Projetando'];
   it('contém "cardoso" → "Cardoso e-Shop"', () => {
-    expect(mapearLojaUpseller('Cardoso e-Shop Oficial')).toBe('Cardoso e-Shop');
+    expect(mapearLojaUpseller('Cardoso e-Shop Oficial', lojas)).toBe('Cardoso e-Shop');
   });
   it('contém "projetando" → "Projetando"', () => {
-    expect(mapearLojaUpseller('Projetando')).toBe('Projetando');
+    expect(mapearLojaUpseller('Projetando', lojas)).toBe('Projetando');
   });
-  it('desconhecida → passthrough', () => {
-    expect(mapearLojaUpseller('Loja Desconhecida')).toBe('Loja Desconhecida');
+  it('desconhecida → primeira loja configurada', () => {
+    expect(mapearLojaUpseller('Loja Desconhecida', lojas)).toBe('Cardoso e-Shop');
   });
 });
 
@@ -177,7 +178,7 @@ const shopeeRows = [
 ];
 
 describe('parseShopeeNativo', () => {
-  const result = parseShopeeNativo(shopeeRows, PRODUTOS);
+  const result = parseShopeeNativo(shopeeRows, PRODUTOS, 'Cardoso e-Shop');
 
   it('filtra pedido cancelado', () => {
     expect(result).toHaveLength(2);
@@ -187,7 +188,7 @@ describe('parseShopeeNativo', () => {
     expect(result[0].numeroPedido).toBe('260615ABC001');
   });
 
-  it('loja sempre "Cardoso e-Shop"', () => {
+  it('loja = lojaDefault passado por parâmetro', () => {
     result.forEach((p) => expect(p.loja).toBe('Cardoso e-Shop'));
   });
 
@@ -352,7 +353,7 @@ const genericoRows = [
 ];
 
 describe('parseGenerico', () => {
-  const result = parseGenerico(genericoRows, PRODUTOS);
+  const result = parseGenerico(genericoRows, PRODUTOS, 'Minha Loja');
 
   it('parseia 2 linhas', () => {
     expect(result).toHaveLength(2);

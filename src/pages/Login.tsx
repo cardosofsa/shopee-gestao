@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Store } from 'lucide-react';
 
 function GoogleIcon() {
   return (
@@ -53,14 +52,10 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-10 h-10 bg-shopee-500 rounded-xl flex items-center justify-center">
-            <Store size={20} className="text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-slate-900 text-lg leading-tight">Gestão Shopee</p>
-            <p className="text-slate-400 text-xs">Cardoso e-Shop</p>
-          </div>
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <div className="w-10 h-10 rounded-full border-[1.5px] border-core-black flex items-center justify-center mb-1" />
+          <p className="font-light tracking-[0.32em] text-core-black text-lg select-none">CORE</p>
+          <p className="text-slate-400 text-xs tracking-wide">Business Operating System</p>
         </div>
 
         <div className="card p-6">
