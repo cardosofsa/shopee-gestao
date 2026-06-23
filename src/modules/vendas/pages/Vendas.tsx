@@ -3,6 +3,7 @@ import {
   Upload, Search, Plus, Trash2, X, Download, Filter, Columns,
 } from 'lucide-react';
 import { useStore } from '../../../store';
+import { usePedidos, useImportPedidos, useDeletePedidos } from '../../../hooks/usePedidos';
 import { fmt } from '../../../utils/calculations';
 import type { Pedido, StatusPedido } from '../../../types';
 import { dbImportacoes, type ImportacaoLog } from '../../../lib/db';
@@ -302,21 +303,16 @@ function PedidoModal({ initialData, onSave, onClose }: {
 
 export default function Vendas() {
   const toast               = useToast();
-  const pedidosAll          = useStore((s) => s.pedidos);
+  const { data: pedidos }   = usePedidos();
   const produtos            = useStore((s) => s.produtos);
   const configuracoes       = useStore((s) => s.configuracoes);
   const userId              = useStore((s) => s.userId);
-  const lojaFiltro          = useStore((s) => s.lojaFiltro);
-  const pedidos             = useMemo(
-    () => lojaFiltro ? pedidosAll.filter((p) => p.loja === lojaFiltro) : pedidosAll,
-    [pedidosAll, lojaFiltro],
-  );
   const addPedido           = useStore((s) => s.addPedido);
   const updatePedido        = useStore((s) => s.updatePedido);
-  const addPedidos          = useStore((s) => s.addPedidos);
   const deletePedido        = useStore((s) => s.deletePedido);
-  const deletePedidos       = useStore((s) => s.deletePedidos);
   const updatePedidosStatus = useStore((s) => s.updatePedidosStatus);
+  const { mutate: importPedidos }     = useImportPedidos();
+  const { mutate: bulkDeletePedidos } = useDeletePedidos();
 
   // ── Import history ────────────────────────────────────────────────────────
   const [importHistory, setImportHistory] = useState<ImportacaoLog[]>([]);
@@ -506,7 +502,7 @@ export default function Vendas() {
     setSelectedIds(new Set());
     setShowConfirmDelete(false);
     undoTimerRef.current = setTimeout(() => {
-      deletePedidos(toDelete);
+      bulkDeletePedidos(toDelete);
       setHiddenIds((prev) => { const n = new Set(prev); toDelete.forEach((id) => n.delete(id)); return n; });
       undoTimerRef.current = null;
     }, 5000);
@@ -580,7 +576,7 @@ export default function Vendas() {
     const final = lojaCustom
       ? novos.map((p) => ({ ...p, loja: lojaCustom }))
       : novos;
-    addPedidos(final);
+    importPedidos(final);
     toast(`${final.length} pedido(s) importado(s) com sucesso!`, 'success');
     if (duplicados > 0)
       toast(`${duplicados} duplicado(s) ignorado(s).`, 'info');

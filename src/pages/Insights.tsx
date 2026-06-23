@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   AlertCircle, AlertTriangle, CheckCircle, Lightbulb,
   TrendingUp, BarChart2, Package, Megaphone, ShoppingBag, Target, RefreshCw,
 } from 'lucide-react';
 import { useStore } from '../store';
-import { generateInsights } from '../utils/insights';
+import { useHeavyCalc } from '../hooks/useHeavyCalc';
 import type { Insight, InsightCategoria, InsightTipo } from '../utils/insights';
 
 const TIPO_META: Record<InsightTipo, {
@@ -107,14 +107,16 @@ export default function Insights() {
   const produtos      = useStore(s => s.produtos);
   const configuracoes = useStore(s => s.configuracoes);
   const [mesAtual]    = useState(() => new Date().toISOString().slice(0, 7));
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const { computeInsights } = useHeavyCalc();
 
-  const insights = useMemo(() => generateInsights({
-    pedidos,
-    historico,
-    produtos,
-    configuracoes,
-    mesAtual,
-  }), [pedidos, historico, produtos, configuracoes, mesAtual]);
+  useEffect(() => {
+    let cancelled = false;
+    computeInsights({ pedidos, historico, produtos, configuracoes, mesAtual })
+      .then((result) => { if (!cancelled) setInsights(result); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pedidos, historico, produtos, configuracoes, mesAtual, computeInsights]);
 
   const byTipo = useMemo(() => {
     const map: Record<InsightTipo, Insight[]> = { critico: [], atencao: [], positivo: [] };
