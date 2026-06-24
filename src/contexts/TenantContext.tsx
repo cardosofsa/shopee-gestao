@@ -54,6 +54,27 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
 
   const refetch = () => setTick((t) => t + 1);
 
+  // Realtime: re-fetch when admin changes tenant_modules for this user (GAP-04)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`tenant_modules:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tenant_modules',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => setTick((t) => t + 1)
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   useEffect(() => {
     let cancelled = false;
 

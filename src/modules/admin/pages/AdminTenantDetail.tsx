@@ -1,9 +1,11 @@
-import { ArrowLeft, Check, Save, X } from 'lucide-react';
+import { ArrowLeft, Check, Edit2, Save, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import type { ModuleKey } from '../../../config/modules';
 import { MODULE_CATALOG, MODULE_GROUPS } from '../../../config/modules';
+import type { SegmentKey } from '../../../config/segments';
+import { SEGMENTS } from '../../../config/segments';
 import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
@@ -28,6 +30,11 @@ interface AuditRow {
   created_at: string;
 }
 
+interface PlanOption {
+  id: string;
+  nome: string;
+}
+
 const SEGMENT_LABELS: Record<string, string> = {
   ecommerce: 'E-commerce',
   varejo: 'Varejo',
@@ -50,17 +57,25 @@ function ModuleToggle({
 }) {
   const mod = MODULE_CATALOG.find((m) => m.key === moduleKey);
   if (!mod) return null;
+  const isCore = mod.isCore;
   return (
     <div className="flex items-center justify-between py-1.5 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-sm">{mod.icon ?? '📦'}</span>
         <span className="text-xs text-slate-300 truncate">{mod.label}</span>
+        {isCore && (
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-600 bg-slate-800 px-1 py-0.5 rounded">
+            core
+          </span>
+        )}
       </div>
       <button
-        onClick={() => onChange(moduleKey, !enabled)}
+        onClick={() => !isCore && onChange(moduleKey, !enabled)}
+        disabled={isCore}
+        title={isCore ? 'Módulo obrigatório — não pode ser desativado' : undefined}
         className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-          enabled ? 'bg-core-green' : 'bg-slate-700'
-        }`}
+          isCore ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+        } ${enabled ? 'bg-core-green' : 'bg-slate-700'}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
@@ -84,10 +99,18 @@ export default function AdminTenantDetail() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Profile editing state (GAP-02)
+  const [profileDraft, setProfileDraft] = useState<{
+    segment: string;
+    plan_id: string | null;
+  } | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [plans, setPlans] = useState<PlanOption[]>([]);
+
   useEffect(() => {
     if (!userId) return;
     Promise.all([
-      supabase.from('admin_tenants_view').select('*').eq('user_id', userId).single(),
+      supabase.rpc('get_admin_tenant', { p_user_id: userId }),
       supabase.from('tenant_modules').select('module_key, enabled').eq('user_id', userId),
       supabase
         .from('admin_audit_log')
@@ -95,8 +118,10 @@ export default function AdminTenantDetail() {
         .eq('target_user', userId)
         .order('created_at', { ascending: false })
         .limit(50),
-    ]).then(([{ data: t }, { data: mods }, { data: a }]) => {
-      setTenant(t as TenantRow);
+      supabase.from('plans').select('id, nome').order('price_brl', { ascending: true }),
+    ]).then(([{ data: tenantData }, { data: mods }, { data: a }, { data: p }]) => {
+      const t = (tenantData as TenantRow[])?.[0] ?? null;
+      setTenant(t);
       const enabled = new Set<ModuleKey>(
         ((mods ?? []) as { module_key: ModuleKey; enabled: boolean }[])
           .filter((m) => m.enabled)
@@ -104,6 +129,7 @@ export default function AdminTenantDetail() {
       );
       setEnabledModules(enabled);
       setAudit((a as AuditRow[]) ?? []);
+      setPlans((p as PlanOption[]) ?? []);
       setLoading(false);
     });
   }, [userId]);
@@ -127,24 +153,30 @@ export default function AdminTenantDetail() {
   }
 
   async function saveModules() {
-    if (!userId || pendingChanges.size === 0) return;
+    if (!userId || pendingChanges.size === 0 || !adminUser) return;
     setSaving(true);
+    const now = new Date().toISOString();
     const ops = Array.from(pendingChanges.entries()).map(([key, enabled]) =>
-      supabase
-        .from('tenant_modules')
-        .upsert({ user_id: userId, module_key: key, enabled }, { onConflict: 'user_id,module_key' })
+      supabase.from('tenant_modules').upsert(
+        {
+          user_id: userId,
+          module_key: key,
+          enabled,
+          updated_by: adminUser.id,
+          updated_at: now,
+        },
+        { onConflict: 'user_id,module_key' }
+      )
     );
     await Promise.all(ops);
 
-    // Audit log
     await supabase.from('admin_audit_log').insert({
-      admin_id: adminUser?.id,
+      admin_id: adminUser.id,
       action: 'update_modules',
       target_user: userId,
       payload: Object.fromEntries(pendingChanges),
     });
 
-    // Apply changes
     const next = new Set(enabledModules);
     pendingChanges.forEach((val, key) => {
       if (val) next.add(key);
@@ -153,6 +185,63 @@ export default function AdminTenantDetail() {
     setEnabledModules(next);
     setPendingChanges(new Map());
     setSaving(false);
+  }
+
+  // GAP-02: save profile changes (segment + plan)
+  async function saveProfile() {
+    if (!userId || !tenant || !profileDraft || !adminUser) return;
+    setProfileSaving(true);
+
+    if (profileDraft.segment !== tenant.segment) {
+      await supabase
+        .from('tenant_profiles')
+        .update({ segment: profileDraft.segment })
+        .eq('user_id', userId);
+    }
+
+    if (profileDraft.plan_id !== tenant.plan_id) {
+      await supabase
+        .from('subscriptions')
+        .upsert({ user_id: userId, plan_id: profileDraft.plan_id }, { onConflict: 'user_id' });
+    }
+
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminUser.id,
+      action: 'update_profile',
+      target_user: userId,
+      payload: {
+        old: { segment: tenant.segment, plan_id: tenant.plan_id },
+        new: profileDraft,
+      },
+    });
+
+    setTenant((t) => (t ? { ...t, ...profileDraft } : t));
+    setProfileDraft(null);
+    setProfileSaving(false);
+  }
+
+  async function applySegmentDefaults() {
+    if (!userId || !profileDraft || !adminUser) return;
+    const seg = profileDraft.segment as SegmentKey;
+    const defaults = SEGMENTS[seg]?.modulosPadrao ?? SEGMENTS.ecommerce.modulosPadrao;
+    const now = new Date().toISOString();
+    const rows = [...defaults].map((key) => ({
+      user_id: userId,
+      module_key: key,
+      enabled: true,
+      updated_by: adminUser.id,
+      updated_at: now,
+    }));
+    await supabase.from('tenant_modules').upsert(rows, { onConflict: 'user_id,module_key' });
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminUser.id,
+      action: 'apply_segment_defaults',
+      target_user: userId,
+      payload: { segment: seg, defaults },
+    });
+    const next = new Set<ModuleKey>([...defaults]);
+    setEnabledModules(next);
+    setPendingChanges(new Map());
   }
 
   if (loading) {
@@ -166,6 +255,8 @@ export default function AdminTenantDetail() {
   if (!tenant) {
     return <div className="p-6 text-slate-400 text-sm">Assinante não encontrado.</div>;
   }
+
+  const editingProfile = profileDraft !== null;
 
   return (
     <div className="p-6 space-y-4 max-w-4xl">
@@ -206,10 +297,100 @@ export default function AdminTenantDetail() {
       {/* Perfil */}
       {tab === 'Perfil' && (
         <div className="bg-slate-900 border border-white/[0.06] rounded-xl p-5 space-y-4">
+          {/* Edit / Save toolbar */}
+          <div className="flex items-center justify-end gap-2 pb-2 border-b border-white/[0.04]">
+            {editingProfile ? (
+              <>
+                <button
+                  onClick={() => setProfileDraft(null)}
+                  className="h-7 px-3 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-white/[0.05] transition-colors"
+                >
+                  <X size={11} /> Cancelar
+                </button>
+                <button
+                  onClick={saveProfile}
+                  disabled={profileSaving}
+                  className="h-7 px-3 flex items-center gap-1.5 text-xs bg-core-green text-slate-950 font-semibold rounded-lg hover:bg-core-green-h transition-colors disabled:opacity-50"
+                >
+                  <Save size={11} />
+                  {profileSaving ? 'Salvando…' : 'Salvar'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() =>
+                  setProfileDraft({ segment: tenant.segment, plan_id: tenant.plan_id })
+                }
+                className="h-7 px-3 flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 rounded-lg hover:bg-white/[0.05] transition-colors"
+              >
+                <Edit2 size={11} /> Editar
+              </button>
+            )}
+          </div>
+
           <Grid label="Email" value={tenant.email} />
           <Grid label="Empresa" value={tenant.business_name || '—'} />
-          <Grid label="Segmento" value={SEGMENT_LABELS[tenant.segment] ?? tenant.segment ?? '—'} />
-          <Grid label="Plano" value={tenant.plan_id ?? '—'} />
+
+          <Grid
+            label="Segmento"
+            value={
+              editingProfile ? (
+                <select
+                  value={profileDraft.segment}
+                  onChange={(e) => setProfileDraft((d) => d && { ...d, segment: e.target.value })}
+                  className="h-8 bg-slate-800 border border-white/[0.08] rounded-lg px-2 text-xs text-slate-200 focus:outline-none focus:border-core-green/40"
+                >
+                  {Object.entries(SEGMENT_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                (SEGMENT_LABELS[tenant.segment] ?? tenant.segment ?? '—')
+              )
+            }
+          />
+
+          <Grid
+            label="Plano"
+            value={
+              editingProfile ? (
+                <select
+                  value={profileDraft.plan_id ?? ''}
+                  onChange={(e) =>
+                    setProfileDraft((d) => d && { ...d, plan_id: e.target.value || null })
+                  }
+                  className="h-8 bg-slate-800 border border-white/[0.08] rounded-lg px-2 text-xs text-slate-200 focus:outline-none focus:border-core-green/40"
+                >
+                  <option value="">— sem plano —</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                (tenant.plan_id ?? '—')
+              )
+            }
+          />
+
+          {editingProfile && (
+            <div className="pt-1">
+              <button
+                onClick={applySegmentDefaults}
+                className="h-7 px-3 text-xs text-amber-400 hover:text-amber-300 border border-amber-400/20 hover:border-amber-400/40 rounded-lg transition-colors"
+              >
+                Aplicar módulos padrão do segmento
+              </button>
+              <p className="text-[10px] text-slate-600 mt-1 ml-1">
+                Substitui os módulos ativos pelos padrões de{' '}
+                {SEGMENT_LABELS[profileDraft.segment] ?? profileDraft.segment}.
+              </p>
+            </div>
+          )}
+
           <Grid label="Status" value={tenant.subscription_status ?? '—'} />
           <Grid
             label="Onboarding"

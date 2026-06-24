@@ -16,6 +16,11 @@ import {
 import { MODULE_BY_KEY } from '../../../config/modules';
 import { supabase } from '../../../lib/supabase';
 
+interface ModuleUsageRow {
+  module_key: string;
+  usage_count: number;
+}
+
 interface TenantRow {
   user_id: string;
   email: string;
@@ -83,25 +88,25 @@ function KPICard({
 export default function AdminDashboard() {
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [moduleUsage, setModuleUsage] = useState<ModuleUsageRow[]>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [{ data: t }, { data: a }] = await Promise.all([
-        supabase
-          .from('admin_tenants_view')
-          .select('*')
-          .order('registered_at', { ascending: false }),
+      const [{ data: t }, { data: a }, { data: mu }] = await Promise.all([
+        supabase.rpc('get_admin_tenants'),
         supabase
           .from('admin_audit_log')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(20),
+        supabase.rpc('get_module_usage'),
       ]);
       const rows = (t as TenantRow[]) ?? [];
       setTenants(rows);
       setAudit((a as AuditRow[]) ?? []);
+      setModuleUsage((mu as ModuleUsageRow[]) ?? []);
       const cutoff = new Date(Date.now() - 30 * 864e5).toISOString();
       setActiveCount(rows.filter((r) => r.last_sign_in_at && r.last_sign_in_at > cutoff).length);
       setLoading(false);
@@ -129,14 +134,14 @@ export default function AdminDashboard() {
   }, [tenants]);
 
   const moduleRanking = useMemo(() => {
-    return Object.entries(MODULE_BY_KEY)
-      .slice(0, 10)
-      .map(([key, mod], i) => ({
-        key,
-        label: mod.label,
-        count: Math.max(0, tenants.length - i * Math.ceil(tenants.length / 12)),
-      }));
-  }, [tenants]);
+    const maxCount = moduleUsage[0]?.usage_count ?? 1;
+    return moduleUsage.slice(0, 10).map((row) => ({
+      key: row.module_key,
+      label: MODULE_BY_KEY[row.module_key as keyof typeof MODULE_BY_KEY]?.label ?? row.module_key,
+      count: row.usage_count,
+      max: maxCount,
+    }));
+  }, [moduleUsage]);
 
   if (loading) {
     return (
@@ -235,20 +240,24 @@ export default function AdminDashboard() {
       <div className="bg-slate-900 border border-white/[0.06] rounded-xl p-5">
         <h3 className="text-sm font-semibold text-slate-300 mb-4">Módulos mais utilizados</h3>
         <div className="space-y-2">
-          {moduleRanking.map((m) => (
-            <div key={m.key} className="flex items-center gap-3">
-              <span className="text-xs text-slate-400 w-28 flex-shrink-0 truncate">{m.label}</span>
-              <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-core-green rounded-full transition-all"
-                  style={{
-                    width: tenants.length > 0 ? `${(m.count / tenants.length) * 100}%` : '0%',
-                  }}
-                />
+          {moduleRanking.length === 0 ? (
+            <p className="text-slate-500 text-sm text-center py-4">Sem dados ainda</p>
+          ) : (
+            moduleRanking.map((m) => (
+              <div key={m.key} className="flex items-center gap-3">
+                <span className="text-xs text-slate-400 w-28 flex-shrink-0 truncate">
+                  {m.label}
+                </span>
+                <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-core-green rounded-full transition-all"
+                    style={{ width: `${(m.count / m.max) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-slate-500 w-8 text-right">{m.count}</span>
               </div>
-              <span className="text-xs text-slate-500 w-8 text-right">{m.count}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

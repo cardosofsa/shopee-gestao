@@ -6,7 +6,9 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react
 import { AdminGuard } from './components/AdminGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
+import { ModuleGuard } from './components/ModuleGuard';
 import { SkeletonPage } from './components/ui/Skeleton';
+import type { ModuleKey } from './config/modules';
 import { AdminProvider } from './contexts/AdminContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
@@ -94,6 +96,18 @@ function page(Component: React.ComponentType, name: string) {
   );
 }
 
+function mpage(Component: React.ComponentType, name: string, moduleKey: ModuleKey) {
+  return (
+    <ModuleGuard module={moduleKey}>
+      <ErrorBoundary pageName={name}>
+        <Suspense fallback={<PageFallback />}>
+          <Component />
+        </Suspense>
+      </ErrorBoundary>
+    </ModuleGuard>
+  );
+}
+
 /**
  * Rota catch-all: decide entre Landing, app autenticado ou redirect para /login.
  * - Não autenticado + path "/" → Landing pública
@@ -142,31 +156,31 @@ function AppOrPublic() {
       </Route>
       <Route path="/" element={<Layout />}>
         <Route index element={page(Dashboard, 'Dashboard')} />
-        <Route path="vendas" element={page(Vendas, 'Vendas')} />
-        <Route path="estoque" element={page(Estoque, 'Estoque')} />
-        <Route path="estoque/:sku" element={page(ProdutoDetalhe, 'Produto')} />
-        <Route path="clientes" element={page(Clientes, 'Clientes')} />
-        <Route path="metas" element={page(Metas, 'Metas')} />
-        <Route path="alertas" element={page(Alertas, 'Alertas')} />
-        <Route path="insights" element={page(Insights, 'Insights')} />
+        <Route path="vendas" element={mpage(Vendas, 'Vendas', 'pedidos')} />
+        <Route path="estoque" element={mpage(Estoque, 'Estoque', 'estoque')} />
+        <Route path="estoque/:sku" element={mpage(ProdutoDetalhe, 'Produto', 'estoque')} />
+        <Route path="clientes" element={mpage(Clientes, 'Clientes', 'clientes')} />
+        <Route path="metas" element={mpage(Metas, 'Metas', 'metas')} />
+        <Route path="alertas" element={mpage(Alertas, 'Alertas', 'alertas')} />
+        <Route path="insights" element={mpage(Insights, 'Insights', 'insights')} />
         <Route path="dre" element={<Navigate to="/financeiro" replace />} />
         <Route path="comparativo" element={<Navigate to="/analise?tab=comparativo" replace />} />
-        <Route path="financeiro" element={page(Financeiro, 'Financeiro')} />
-        <Route path="contas-pagar" element={page(ContasPagar, 'Contas a Pagar')} />
-        <Route path="break-even" element={page(BreakEven, 'Break-Even')} />
-        <Route path="fluxo-caixa" element={page(FluxoCaixa, 'Fluxo de Caixa')} />
+        <Route path="financeiro" element={mpage(Financeiro, 'Financeiro', 'financeiro')} />
+        <Route path="contas-pagar" element={mpage(ContasPagar, 'Contas a Pagar', 'contas_pagar')} />
+        <Route path="break-even" element={mpage(BreakEven, 'Break-Even', 'break_even')} />
+        <Route path="fluxo-caixa" element={mpage(FluxoCaixa, 'Fluxo de Caixa', 'fluxo_caixa')} />
         <Route path="sazonalidade" element={<Navigate to="/analise?tab=sazonalidade" replace />} />
-        <Route path="precificacao" element={page(Precificacao, 'Precificação')} />
-        <Route path="relatorio" element={page(Relatorio, 'Relatório')} />
-        <Route path="fornecedores" element={page(Fornecedores, 'Fornecedores')} />
-        <Route path="campanhas" element={page(Campanhas, 'Campanhas')} />
+        <Route path="precificacao" element={mpage(Precificacao, 'Precificação', 'precificacao')} />
+        <Route path="relatorio" element={mpage(Relatorio, 'Relatório', 'relatorio')} />
+        <Route path="fornecedores" element={mpage(Fornecedores, 'Fornecedores', 'fornecedores')} />
+        <Route path="campanhas" element={mpage(Campanhas, 'Campanhas', 'campanhas')} />
         <Route path="ads" element={<Navigate to="/campanhas?tab=ads" replace />} />
-        <Route path="devolucoes" element={page(Devolucoes, 'Devoluções')} />
-        <Route path="reposicao" element={page(Reposicao, 'Reposição')} />
-        <Route path="importar" element={page(Importar, 'Importar')} />
+        <Route path="devolucoes" element={mpage(Devolucoes, 'Devoluções', 'devolucoes')} />
+        <Route path="reposicao" element={mpage(Reposicao, 'Reposição', 'reposicao')} />
+        <Route path="importar" element={mpage(Importar, 'Importar', 'importar')} />
         <Route path="compras" element={<Navigate to="/estoque" replace />} />
         <Route path="hoje" element={<Navigate to="/" replace />} />
-        <Route path="analise" element={page(Analise, 'Análise')} />
+        <Route path="analise" element={mpage(Analise, 'Análise', 'analise')} />
         <Route path="previsao" element={page(Previsao, 'Previsão')} />
         <Route path="abc" element={<Navigate to="/analise?tab=abc" replace />} />
         <Route path="metas-produto" element={page(MetasProduto, 'Metas por Produto')} />
@@ -174,12 +188,12 @@ function AppOrPublic() {
         <Route path="saude" element={page(Saude, 'Saúde do Negócio')} />
         <Route path="mapa-calor" element={page(MapaCalor, 'Mapa de Calor')} />
         <Route path="categorias" element={page(Categorias, 'Categorias')} />
-        <Route path="anual" element={page(ComparativoAnual, 'Comparativo Anual')} />
-        <Route path="exportar" element={page(Exportar, 'Exportar')} />
-        <Route path="despesas" element={page(Despesas, 'Despesas')} />
-        <Route path="kanban" element={page(Kanban, 'Tarefas')} />
-        <Route path="calendario" element={page(Calendario, 'Calendário')} />
-        <Route path="calculadora" element={page(Calculadora, 'Calculadora')} />
+        <Route path="anual" element={mpage(ComparativoAnual, 'Comparativo Anual', 'comparativo')} />
+        <Route path="exportar" element={mpage(Exportar, 'Exportar', 'exportar')} />
+        <Route path="despesas" element={mpage(Despesas, 'Despesas', 'despesas')} />
+        <Route path="kanban" element={mpage(Kanban, 'Tarefas', 'tarefas')} />
+        <Route path="calendario" element={mpage(Calendario, 'Calendário', 'calendario')} />
+        <Route path="calculadora" element={mpage(Calculadora, 'Calculadora', 'calculadora')} />
         <Route path="configs" element={page(Configs, 'Configurações')} />
         <Route path="planos" element={page(Planos, 'Planos')} />
         <Route path="equipe" element={page(Equipe, 'Equipe')} />

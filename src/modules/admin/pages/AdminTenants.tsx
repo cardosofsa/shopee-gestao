@@ -50,14 +50,10 @@ export default function AdminTenants() {
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    supabase
-      .from('admin_tenants_view')
-      .select('*')
-      .order('registered_at', { ascending: false })
-      .then(({ data }) => {
-        setTenants((data as TenantRow[]) ?? []);
-        setLoading(false);
-      });
+    supabase.rpc('get_admin_tenants').then(({ data }) => {
+      setTenants((data as TenantRow[]) ?? []);
+      setLoading(false);
+    });
   }, []);
 
   const filtered = useMemo(() => {

@@ -31,6 +31,7 @@ import {
 import { type NavItem, SIDEBAR_GROUPS } from '../navigation';
 import { useStore } from '../store';
 import { CommandPalette } from './CommandPalette';
+import { OnboardingWizard } from './OnboardingWizard';
 import { ToastProvider, useToast } from './Toast';
 
 // NavItem with badge resolved to a number (after dynamic count is applied)
@@ -502,6 +503,8 @@ function SidebarFooter({
 
 export default function Layout() {
   const { user, signOut } = useAuth();
+  const { onboardingDone, isLoading: tenantLoading, refetch: refetchTenant } = useTenant();
+  const { isAdmin } = useAdmin();
   const darkMode = useStore((s) => s.darkMode);
   const isHydrated = useStore((s) => s.isHydrated);
   const userId = useStore((s) => s.userId);
@@ -777,6 +780,9 @@ export default function Layout() {
           </main>
         </div>
       </div>
+      {!tenantLoading && !onboardingDone && !isAdmin && user && (
+        <OnboardingWizard userId={user.id} onComplete={refetchTenant} />
+      )}
       <SyncErrorHandler />
       <LimitHandler />
     </ToastProvider>

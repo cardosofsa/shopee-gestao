@@ -7,8 +7,7 @@ import { supabase } from '../../../lib/supabase';
 
 interface Plan {
   id: string;
-  name: string;
-  description: string | null;
+  nome: string;
   price_brl: number | null;
   modules_included: string[] | null;
   active: boolean;
@@ -24,7 +23,7 @@ export default function AdminPlans() {
   useEffect(() => {
     supabase
       .from('plans')
-      .select('id, name, description, price_brl, modules_included, active')
+      .select('id, nome, price_brl, modules_included, active')
       .order('price_brl', { ascending: true })
       .then(({ data }) => {
         setPlans((data as Plan[]) ?? []);
@@ -48,8 +47,7 @@ export default function AdminPlans() {
     const { error } = await supabase
       .from('plans')
       .update({
-        name: draft.name,
-        description: draft.description,
+        nome: draft.nome,
         price_brl: draft.price_brl,
         modules_included: draft.modules_included,
         active: draft.active,
@@ -108,31 +106,19 @@ export default function AdminPlans() {
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
                     <input
-                      value={d.name ?? ''}
-                      onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+                      value={d.nome ?? ''}
+                      onChange={(e) => setDraft((prev) => ({ ...prev, nome: e.target.value }))}
                       className="w-full h-9 bg-slate-800 border border-white/[0.06] rounded-lg px-3 text-sm text-slate-100 focus:outline-none focus:border-core-green/40 font-semibold"
                     />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-100">{plan.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-100">{plan.nome}</h3>
                       {!plan.active && (
                         <span className="text-[10px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded border border-white/[0.06]">
                           Inativo
                         </span>
                       )}
                     </div>
-                  )}
-                  {isEditing ? (
-                    <input
-                      value={d.description ?? ''}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, description: e.target.value }))
-                      }
-                      placeholder="Descrição…"
-                      className="w-full h-8 bg-slate-800 border border-white/[0.06] rounded-lg px-3 text-xs text-slate-400 focus:outline-none focus:border-core-green/40 mt-1.5"
-                    />
-                  ) : (
-                    <p className="text-xs text-slate-500 mt-0.5">{plan.description ?? '—'}</p>
                   )}
                 </div>
 
