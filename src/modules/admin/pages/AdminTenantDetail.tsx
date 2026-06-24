@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import type { ModuleKey } from '../../../config/modules';
 import { MODULE_CATALOG, MODULE_GROUPS } from '../../../config/modules';
+import { useAuth } from '../../../contexts/AuthContext';
 import { supabase } from '../../../lib/supabase';
 
 interface TenantRow {
@@ -74,6 +75,7 @@ function ModuleToggle({
 export default function AdminTenantDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user: adminUser } = useAuth();
   const [tab, setTab] = useState<Tab>('Perfil');
   const [tenant, setTenant] = useState<TenantRow | null>(null);
   const [audit, setAudit] = useState<AuditRow[]>([]);
@@ -136,6 +138,7 @@ export default function AdminTenantDetail() {
 
     // Audit log
     await supabase.from('admin_audit_log').insert({
+      admin_id: adminUser?.id,
       action: 'update_modules',
       target_user: userId,
       payload: Object.fromEntries(pendingChanges),

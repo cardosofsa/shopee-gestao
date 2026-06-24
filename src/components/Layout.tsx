@@ -9,6 +9,7 @@ import {
   Moon,
   Search,
   Settings,
+  Shield,
   Star,
   Store,
   Sun,
@@ -18,6 +19,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useTenant } from '../contexts/TenantContext';
+import { useAdmin } from '../hooks/useAdmin';
 import { useAlertas } from '../hooks/useAlertas';
 import { useRealtime } from '../hooks/useRealtime';
 import {
@@ -380,10 +382,24 @@ function SidebarFooter({
 }) {
   const initials = getInitials(email);
   const username = email.split('@')[0];
+  const { isAdmin } = useAdmin();
 
   if (collapsed) {
     return (
       <div className="border-t border-white/[0.06] py-3 flex flex-col items-center gap-2">
+        {isAdmin && (
+          <div className="relative group">
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex items-center justify-center w-10 h-9 rounded-lg transition-all duration-150 ${isActive ? 'text-amber-300 bg-amber-400/10' : 'text-amber-500/60 hover:text-amber-300 hover:bg-amber-400/10'}`
+              }
+            >
+              <Shield size={15} />
+            </NavLink>
+            <Tip label="Admin Panel" />
+          </div>
+        )}
         {syncState !== 'idle' && (
           <div className="flex items-center justify-center w-10 h-5">
             <SyncDot state={syncState} />
@@ -423,7 +439,22 @@ function SidebarFooter({
   }
 
   return (
-    <div className="border-t border-white/[0.06] px-3 py-3">
+    <div className="border-t border-white/[0.06] px-3 py-3 space-y-1.5">
+      {isAdmin && (
+        <NavLink
+          to="/admin"
+          className={({ isActive }) =>
+            `flex items-center gap-2 px-3 h-8 rounded-lg text-xs font-semibold transition-all duration-150 ${
+              isActive
+                ? 'bg-amber-400/10 text-amber-300'
+                : 'text-amber-500/70 hover:text-amber-300 hover:bg-amber-400/10'
+            }`
+          }
+        >
+          <Shield size={13} />
+          Admin Panel
+        </NavLink>
+      )}
       <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/[0.04] ring-1 ring-white/[0.06]">
         <div className="w-7 h-7 rounded-lg bg-white/[0.1] flex items-center justify-center flex-shrink-0 font-medium text-[11px] text-slate-300 ring-1 ring-white/[0.08]">
           {initials}

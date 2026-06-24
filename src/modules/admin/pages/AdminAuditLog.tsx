@@ -5,7 +5,7 @@ import { supabase } from '../../../lib/supabase';
 
 interface AuditRow {
   id: string;
-  admin_user: string | null;
+  admin_id: string | null;
   action: string;
   target_user: string | null;
   payload: Record<string, unknown>;
@@ -52,11 +52,11 @@ export default function AdminAuditLog() {
   }, [rows, filterAction, filterUser]);
 
   function exportCSV() {
-    const header = 'id,action,admin_user,target_user,payload,created_at\n';
+    const header = 'id,action,admin_id,target_user,payload,created_at\n';
     const body = filtered
       .map(
         (r) =>
-          `${r.id},${r.action},${r.admin_user ?? ''},${r.target_user ?? ''},${JSON.stringify(r.payload)},${r.created_at}`
+          `${r.id},${r.action},${r.admin_id ?? ''},${r.target_user ?? ''},${JSON.stringify(r.payload)},${r.created_at}`
       )
       .join('\n');
     const blob = new Blob([header + body], { type: 'text/csv' });
@@ -178,7 +178,7 @@ export default function AdminAuditLog() {
                     </span>
                   </div>
                   <div className="px-4 py-3 flex items-center min-w-0">
-                    <span className="text-xs text-slate-500 truncate">{row.admin_user ?? '—'}</span>
+                    <span className="text-xs text-slate-500 truncate">{row.admin_id ?? '—'}</span>
                   </div>
                   <div className="px-4 py-3 flex items-start flex-col gap-0.5 min-w-0">
                     <span className="text-xs text-slate-300 truncate w-full">
