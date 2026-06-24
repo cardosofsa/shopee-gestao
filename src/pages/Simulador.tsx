@@ -1,24 +1,38 @@
-import { useState, useMemo } from 'react';
+import {
+  Award,
+  ChevronDown,
+  FlaskConical,
+  Info,
+  Minus,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FlaskConical, Award, TrendingUp, TrendingDown, Minus,
-  RefreshCw, ChevronDown, Info,
-} from 'lucide-react';
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, ReferenceLine, Legend,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+
+import { EmptyState } from '../components/ui';
 import { useStore } from '../store';
 import { fmt, fmtPct } from '../utils/calculations';
-import { EmptyState } from '../components/ui';
 import { C } from '../utils/chartColors';
 
 // ─── Shopee tiers (same as Calculadora) ──────────────────────────────────────
 
 const TIERS = [
-  { min: 0,   max: 79.99,   fixed: 4  },
-  { min: 80,  max: 99.99,   fixed: 16 },
-  { min: 100, max: 199.99,  fixed: 20 },
+  { min: 0, max: 79.99, fixed: 4 },
+  { min: 80, max: 99.99, fixed: 16 },
+  { min: 100, max: 199.99, fixed: 20 },
   { min: 200, max: Infinity, fixed: 26 },
 ];
 
@@ -32,13 +46,13 @@ function computeResult(s: ScenarioDef) {
   const com = s.comissao / 100;
   const fixo = s.taxaFixa;
   const custo = s.custo + s.embalagem + s.frete;
-  const taxa  = s.preco * com + fixo;
-  const adsV  = s.preco * ads;
-  const dasV  = s.preco * das;
+  const taxa = s.preco * com + fixo;
+  const adsV = s.preco * ads;
+  const dasV = s.preco * das;
   const lucro = s.preco - custo - taxa - adsV - dasV;
   const margem = s.preco > 0 ? (lucro / s.preco) * 100 : 0;
   const lucroMensal = lucro * s.volumeMes;
-  const breakeven  = lucro > 0 ? Math.ceil(custo / lucro) : null;
+  const breakeven = lucro > 0 ? Math.ceil(custo / lucro) : null;
   const roi = custo > 0 ? (lucro / custo) * 100 : 0;
   return { lucro, margem, lucroMensal, breakeven, roi, taxa, adsV, dasV, custo };
 }
@@ -79,20 +93,33 @@ function defaultScenario(idx: number): ScenarioDef {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function NumField({
-  label, value, onChange, prefix, step = 0.5, hint,
+  label,
+  value,
+  onChange,
+  prefix,
+  step = 0.5,
+  hint,
 }: {
-  label: string; value: number; onChange: (v: number) => void;
-  prefix?: string; step?: number; hint?: string;
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  prefix?: string;
+  step?: number;
+  hint?: string;
 }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</label>
+        <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          {label}
+        </label>
         {hint && <span className="text-[10px] text-slate-400 dark:text-slate-500">{hint}</span>}
       </div>
       <div className="relative">
         {prefix && (
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">{prefix}</span>
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+            {prefix}
+          </span>
         )}
         <input
           type="number"
@@ -107,13 +134,23 @@ function NumField({
   );
 }
 
-function MetricRow({ label, value, highlight = false, negative = false }: {
-  label: string; value: string; highlight?: boolean; negative?: boolean;
+function MetricRow({
+  label,
+  value,
+  highlight = false,
+  negative = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  negative?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between py-1 border-b border-slate-50 dark:border-slate-800 last:border-0">
       <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
-      <span className={`text-xs font-semibold tabular-nums ${highlight ? (negative ? 'text-red-500' : 'text-core-green') : 'text-slate-700 dark:text-slate-200'}`}>
+      <span
+        className={`text-xs font-semibold tabular-nums ${highlight ? (negative ? 'text-red-500' : 'text-core-green') : 'text-slate-700 dark:text-slate-200'}`}
+      >
         {value}
       </span>
     </div>
@@ -126,12 +163,16 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-lg text-xs">
-      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">{fmt(parseFloat(label))}</p>
+      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">
+        {fmt(parseFloat(label))}
+      </p>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2 py-0.5">
           <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
           <span className="text-slate-500 dark:text-slate-400">{p.name}:</span>
-          <span className="font-semibold text-slate-700 dark:text-slate-200">{p.value.toFixed(1)}%</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-200">
+            {p.value.toFixed(1)}%
+          </span>
         </div>
       ))}
     </div>
@@ -142,7 +183,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
 export default function Simulador() {
   const produtos = useStore((s) => s.produtos);
-  const configs  = useStore((s) => s.configuracoes);
+  const configs = useStore((s) => s.configuracoes);
 
   const [scenarios, setScenarios] = useState<ScenarioDef[]>([
     defaultScenario(0),
@@ -174,9 +215,13 @@ export default function Simulador() {
   // ── Best scenario ─────────────────────────────────────────────────────────
 
   const bestIdx = useMemo(() => {
-    let best = -1, bestMargem = -Infinity;
+    let best = -1,
+      bestMargem = -Infinity;
     results.forEach((r, i) => {
-      if (r.margem > bestMargem) { bestMargem = r.margem; best = i; }
+      if (r.margem > bestMargem) {
+        bestMargem = r.margem;
+        best = i;
+      }
     });
     return bestMargem > 0 ? best : -1;
   }, [results]);
@@ -210,7 +255,6 @@ export default function Simulador() {
 
   return (
     <div className="flex-1 p-6 space-y-6">
-
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -218,8 +262,12 @@ export default function Simulador() {
             <FlaskConical size={18} className="text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Simulador de Cenários</h1>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Compare até 3 estratégias de preço lado a lado</p>
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+              Simulador de Cenários
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Compare até 3 estratégias de preço lado a lado
+            </p>
           </div>
         </div>
         <Link
@@ -242,13 +290,20 @@ export default function Simulador() {
             className="text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-none focus:ring-1 focus:ring-core-green/50"
           >
             <option value="">Selecionar SKU (preenche custo automaticamente)</option>
-            {produtos.filter((p) => p.ativo !== false).map((p) => (
-              <option key={p.sku} value={p.sku}>{p.sku} — {p.nome}</option>
-            ))}
+            {produtos
+              .filter((p) => p.ativo !== false)
+              .map((p) => (
+                <option key={p.sku} value={p.sku}>
+                  {p.sku} — {p.nome}
+                </option>
+              ))}
           </select>
           {selectedSku && (
             <button
-              onClick={() => { setSelectedSku(''); setScenarios([0, 1, 2].map(defaultScenario)); }}
+              onClick={() => {
+                setSelectedSku('');
+                setScenarios([0, 1, 2].map(defaultScenario));
+              }}
               className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors"
             >
               <RefreshCw size={12} /> Limpar
@@ -276,7 +331,10 @@ export default function Simulador() {
               {/* Scenario header */}
               <div
                 className="px-4 py-3 flex items-center justify-between cursor-pointer select-none"
-                style={{ borderBottom: isOpen ? '1px solid' : 'none', borderColor: 'rgb(241 245 249)' }}
+                style={{
+                  borderBottom: isOpen ? '1px solid' : 'none',
+                  borderColor: 'rgb(241 245 249)',
+                }}
                 onClick={() => setOpenIdx(isOpen ? null : idx)}
               >
                 <div className="flex items-center gap-2">
@@ -297,35 +355,90 @@ export default function Simulador() {
                     </span>
                   )}
                 </div>
-                <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  size={14}
+                  className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                />
               </div>
 
               {/* Inputs (collapsible) */}
               {isOpen && (
                 <div className="px-4 py-3 space-y-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
                   <div className="grid grid-cols-2 gap-3">
-                    <NumField label="Custo produto"    value={s.custo}      onChange={(v) => updateScenario(idx, { custo: v })}      prefix="R$" />
-                    <NumField label="Embalagem"        value={s.embalagem}  onChange={(v) => updateScenario(idx, { embalagem: v })}  prefix="R$" />
-                    <NumField label="Frete saída"      value={s.frete}      onChange={(v) => updateScenario(idx, { frete: v })}      prefix="R$" />
-                    <NumField label="Preço de venda"   value={s.preco}      onChange={(v) => updateScenario(idx, { preco: v })}      prefix="R$" step={1} />
+                    <NumField
+                      label="Custo produto"
+                      value={s.custo}
+                      onChange={(v) => updateScenario(idx, { custo: v })}
+                      prefix="R$"
+                    />
+                    <NumField
+                      label="Embalagem"
+                      value={s.embalagem}
+                      onChange={(v) => updateScenario(idx, { embalagem: v })}
+                      prefix="R$"
+                    />
+                    <NumField
+                      label="Frete saída"
+                      value={s.frete}
+                      onChange={(v) => updateScenario(idx, { frete: v })}
+                      prefix="R$"
+                    />
+                    <NumField
+                      label="Preço de venda"
+                      value={s.preco}
+                      onChange={(v) => updateScenario(idx, { preco: v })}
+                      prefix="R$"
+                      step={1}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <NumField label="Comissão Shopee" value={s.comissao}   onChange={(v) => updateScenario(idx, { comissao: v })}   hint="%" step={0.1} />
-                    <NumField label="Taxa fixa"       value={s.taxaFixa}   onChange={(v) => updateScenario(idx, { taxaFixa: v })}   prefix="R$" step={1} hint="0 = auto" />
-                    <NumField label="ADS/Marketing"   value={s.ads}        onChange={(v) => updateScenario(idx, { ads: v })}        hint="%" step={0.5} />
-                    <NumField label="DAS/Imposto"     value={s.das}        onChange={(v) => updateScenario(idx, { das: v })}        hint="%" step={0.1} />
+                    <NumField
+                      label="Comissão Shopee"
+                      value={s.comissao}
+                      onChange={(v) => updateScenario(idx, { comissao: v })}
+                      hint="%"
+                      step={0.1}
+                    />
+                    <NumField
+                      label="Taxa fixa"
+                      value={s.taxaFixa}
+                      onChange={(v) => updateScenario(idx, { taxaFixa: v })}
+                      prefix="R$"
+                      step={1}
+                      hint="0 = auto"
+                    />
+                    <NumField
+                      label="ADS/Marketing"
+                      value={s.ads}
+                      onChange={(v) => updateScenario(idx, { ads: v })}
+                      hint="%"
+                      step={0.5}
+                    />
+                    <NumField
+                      label="DAS/Imposto"
+                      value={s.das}
+                      onChange={(v) => updateScenario(idx, { das: v })}
+                      hint="%"
+                      step={0.1}
+                    />
                   </div>
-                  <NumField label="Volume esperado / mês" value={s.volumeMes} onChange={(v) => updateScenario(idx, { volumeMes: Math.round(v) })} hint="un." step={1} />
+                  <NumField
+                    label="Volume esperado / mês"
+                    value={s.volumeMes}
+                    onChange={(v) => updateScenario(idx, { volumeMes: Math.round(v) })}
+                    hint="un."
+                    step={1}
+                  />
                 </div>
               )}
 
               {/* Results */}
               <div className="px-4 py-3 space-y-0.5">
-                <MetricRow label="Preço de venda"   value={s.preco > 0 ? fmt(s.preco) : '—'} />
-                <MetricRow label="Custo total"       value={r.custo > 0 ? fmt(r.custo) : '—'} />
-                <MetricRow label="Taxa Shopee"       value={r.taxa > 0 ? fmt(r.taxa) : '—'} negative />
-                <MetricRow label="ADS"               value={r.adsV > 0 ? fmt(r.adsV) : '—'} negative />
-                <MetricRow label="Imposto"           value={r.dasV > 0 ? fmt(r.dasV) : '—'} negative />
+                <MetricRow label="Preço de venda" value={s.preco > 0 ? fmt(s.preco) : '—'} />
+                <MetricRow label="Custo total" value={r.custo > 0 ? fmt(r.custo) : '—'} />
+                <MetricRow label="Taxa Shopee" value={r.taxa > 0 ? fmt(r.taxa) : '—'} negative />
+                <MetricRow label="ADS" value={r.adsV > 0 ? fmt(r.adsV) : '—'} negative />
+                <MetricRow label="Imposto" value={r.dasV > 0 ? fmt(r.dasV) : '—'} negative />
 
                 <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-700 space-y-0.5">
                   <MetricRow
@@ -354,7 +467,9 @@ export default function Simulador() {
                   />
                   <MetricRow
                     label="Break-even"
-                    value={r.breakeven != null ? `${r.breakeven} un.` : r.lucro <= 0 ? 'Inviável' : '—'}
+                    value={
+                      r.breakeven != null ? `${r.breakeven} un.` : r.lucro <= 0 ? 'Inviável' : '—'
+                    }
                     negative={r.breakeven == null && r.lucro <= 0}
                   />
                 </div>
@@ -375,20 +490,33 @@ export default function Simulador() {
               const r = results[idx];
               const isBest = idx === bestIdx;
               const TrendIcon = r.margem > 15 ? TrendingUp : r.margem > 0 ? Minus : TrendingDown;
-              const trendColor = r.margem > 15 ? 'text-green-500' : r.margem > 0 ? 'text-amber-500' : 'text-red-500';
+              const trendColor =
+                r.margem > 15 ? 'text-green-500' : r.margem > 0 ? 'text-amber-500' : 'text-red-500';
 
               return (
-                <div key={idx} className={`text-center py-2 rounded-xl ${isBest ? 'bg-core-green/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                <div
+                  key={idx}
+                  className={`text-center py-2 rounded-xl ${isBest ? 'bg-core-green/10' : 'bg-slate-50 dark:bg-slate-800'}`}
+                >
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    <span className="w-2 h-2 rounded-full" style={{ background: SCENARIO_COLORS[idx] }} />
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{s.label}</span>
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ background: SCENARIO_COLORS[idx] }}
+                    />
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      {s.label}
+                    </span>
                   </div>
-                  <div className={`text-xl font-bold ${isBest ? 'text-core-green' : 'text-slate-700 dark:text-slate-200'}`}>
+                  <div
+                    className={`text-xl font-bold ${isBest ? 'text-core-green' : 'text-slate-700 dark:text-slate-200'}`}
+                  >
                     {s.preco > 0 ? fmtPct(r.margem / 100) : '—'}
                   </div>
                   <div className="flex items-center justify-center gap-1 mt-1">
                     <TrendIcon size={11} className={trendColor} />
-                    <span className="text-[10px] text-slate-400">{s.preco > 0 ? fmt(r.lucroMensal) + '/mês' : 'sem preço'}</span>
+                    <span className="text-[10px] text-slate-400">
+                      {s.preco > 0 ? fmt(r.lucroMensal) + '/mês' : 'sem preço'}
+                    </span>
                   </div>
                 </div>
               );
@@ -402,8 +530,12 @@ export default function Simulador() {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sensibilidade de Margem × Preço</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">Como a margem evolui conforme o preço muda (mantendo custos fixos)</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Sensibilidade de Margem × Preço
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Como a margem evolui conforme o preço muda (mantendo custos fixos)
+              </p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={260}>
@@ -420,7 +552,13 @@ export default function Simulador() {
                 width={38}
               />
               <ReferenceLine y={0} stroke={C.red} strokeDasharray="4 2" strokeWidth={1} />
-              <ReferenceLine y={15} stroke={C.primary} strokeDasharray="4 2" strokeWidth={1} label={{ value: '15%', position: 'insideLeft', fontSize: 9, fill: C.primary }} />
+              <ReferenceLine
+                y={15}
+                stroke={C.primary}
+                strokeDasharray="4 2"
+                strokeWidth={1}
+                label={{ value: '15%', position: 'insideLeft', fontSize: 9, fill: C.primary }}
+              />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
               {scenarios.map((s, idx) => (
@@ -439,9 +577,11 @@ export default function Simulador() {
                 s.preco > 0 ? (
                   <ReferenceLine
                     key={`price-${idx}`}
-                    x={sensData.reduce((best, d) =>
-                      Math.abs(d.preco - s.preco) < Math.abs(best.preco - s.preco) ? d : best
-                    ).preco}
+                    x={
+                      sensData.reduce((best, d) =>
+                        Math.abs(d.preco - s.preco) < Math.abs(best.preco - s.preco) ? d : best
+                      ).preco
+                    }
                     stroke={SCENARIO_COLORS[idx]}
                     strokeDasharray="3 3"
                     strokeWidth={1.5}
@@ -462,7 +602,6 @@ export default function Simulador() {
           description="Clique em um cenário para expandir os campos de entrada."
         />
       )}
-
     </div>
   );
 }

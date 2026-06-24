@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState } from 'react';
+
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
         if (event === 'SIGNED_IN') await loadAndHydrate(session.user.id);
@@ -50,9 +53,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, loading, signOut }}>{children}</AuthContext.Provider>;
 }

@@ -1,14 +1,10 @@
-import { supabase } from './supabase';
 import type { Tarefa } from '../types';
+import { supabase } from './supabase';
 
 // ── ICS generation ────────────────────────────────────────────
 
 function icsEscape(str: string): string {
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g,  '\\;')
-    .replace(/,/g,  '\\,')
-    .replace(/\n/g, '\\n');
+  return str.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
 function toICSDate(dateStr: string): string {
@@ -80,9 +76,9 @@ export function buildICS(tarefas: Tarefa[]): string {
 export function downloadICS(tarefas: Tarefa[], filename = 'tarefas-shopee.ics') {
   const content = buildICS(tarefas);
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
@@ -123,7 +119,7 @@ export async function disconnectGoogleCalendar(): Promise<void> {
 export async function pushToGoogleCalendar(
   accessToken: string,
   tarefas: Tarefa[],
-  calendarId = 'primary',
+  calendarId = 'primary'
 ): Promise<{ pushed: number; errors: number }> {
   const pending = tarefas.filter((t) => !!t.dataVencimento && t.coluna !== 'done');
   let pushed = 0;
@@ -143,12 +139,13 @@ export async function pushToGoogleCalendar(
             summary: t.titulo,
             description: t.descricao || undefined,
             start: { date: t.dataVencimento },
-            end:   { date: nextDayISO(t.dataVencimento!) },
+            end: { date: nextDayISO(t.dataVencimento!) },
             source: { title: 'Shopee Gestão', url: window.location.origin },
           }),
-        },
+        }
       );
-      if (res.ok) pushed++; else errors++;
+      if (res.ok) pushed++;
+      else errors++;
     } catch {
       errors++;
     }

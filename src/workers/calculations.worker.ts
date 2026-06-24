@@ -8,16 +8,20 @@
  *
  * Cada chamada é identificada por um UUID (`id`) para correlacionar resposta.
  */
-import { generateInsights } from '../utils/insights';
-import { getRankingProdutos } from '../utils/calculations';
 import { computeDRE } from '../domain/dre';
+import type { Despesa, Pedido } from '../types';
+import { getRankingProdutos } from '../utils/calculations';
 import type { InsightInput } from '../utils/insights';
-import type { Pedido, Despesa } from '../types';
+import { generateInsights } from '../utils/insights';
 
 type WorkerMsg =
   | { type: 'GENERATE_INSIGHTS'; id: string; payload: InsightInput }
-  | { type: 'COMPUTE_RANKING';   id: string; payload: Pedido[] }
-  | { type: 'COMPUTE_DRE';       id: string; payload: { pedidos: Pedido[]; despesas: Despesa[]; mesAno: string } };
+  | { type: 'COMPUTE_RANKING'; id: string; payload: Pedido[] }
+  | {
+      type: 'COMPUTE_DRE';
+      id: string;
+      payload: { pedidos: Pedido[]; despesas: Despesa[]; mesAno: string };
+    };
 
 interface WorkerCtx {
   onmessage: ((e: MessageEvent<WorkerMsg>) => void) | null;

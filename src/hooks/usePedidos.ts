@@ -12,11 +12,12 @@
  * Progressão: páginas migradas para este hook deixam de depender de useStore(s=>s.pedidos).
  * Páginas legadas continuam funcionando via Zustand (sincronizado pelo useEffect abaixo).
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { useStore } from '../store';
+
 import { dbPedidos } from '../lib/db';
 import { queryClient } from '../lib/queryClient';
+import { useStore } from '../store';
 import type { Pedido } from '../types';
 
 // ── Query key factory ─────────────────────────────────────────────────────────
@@ -37,13 +38,13 @@ export function invalidatePedidos(uid: string | null) {
  * garantindo que páginas que ainda usam useStore((s) => s.pedidos) recebam dados frescos.
  */
 export function usePedidos() {
-  const uid        = useStore((s) => s.userId);
+  const uid = useStore((s) => s.userId);
   const lojaFiltro = useStore((s) => s.lojaFiltro);
 
   const query = useQuery({
     queryKey: pedidosKey(uid),
-    queryFn:  () => dbPedidos.getAll(uid!),
-    enabled:  !!uid,
+    queryFn: () => dbPedidos.getAll(uid!),
+    enabled: !!uid,
   });
 
   // Sincroniza Zustand quando RQ traz dados frescos (janela reaberta, foco, etc.)
@@ -53,9 +54,8 @@ export function usePedidos() {
     }
   }, [query.data]);
 
-  const data = lojaFiltro && query.data
-    ? query.data.filter((p) => p.loja === lojaFiltro)
-    : (query.data ?? []);
+  const data =
+    lojaFiltro && query.data ? query.data.filter((p) => p.loja === lojaFiltro) : (query.data ?? []);
 
   return { ...query, data };
 }
@@ -64,7 +64,7 @@ export function usePedidos() {
 
 /** Adiciona um pedido com atualização otimista no cache RQ + rollback no erro. */
 export function useAddPedido() {
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
   const uid = useStore((s) => s.userId);
 
   return useMutation<Pedido, Error, Pedido>({
@@ -100,7 +100,7 @@ export function useAddPedido() {
  * onSettled: refetch do servidor
  */
 export function useImportPedidos() {
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
   const uid = useStore((s) => s.userId);
 
   return useMutation<Pedido[], Error, Pedido[]>({
@@ -130,7 +130,7 @@ export function useImportPedidos() {
 // ── useDeletePedido ───────────────────────────────────────────────────────────
 
 export function useDeletePedido() {
-  const qc  = useQueryClient();
+  const qc = useQueryClient();
   const uid = useStore((s) => s.userId);
 
   return useMutation<void, Error, string>({
@@ -164,8 +164,8 @@ export function useDeletePedido() {
  * O cache é invalidado após a ação do store, que já tem seu próprio rollback.
  */
 export function useUpdatePedidoStatus() {
-  const qc                = useQueryClient();
-  const uid               = useStore((s) => s.userId);
+  const qc = useQueryClient();
+  const uid = useStore((s) => s.userId);
   const updatePedidoStatus = useStore((s) => s.updatePedidoStatus);
 
   return useMutation<void, Error, { id: string; status: Pedido['status'] }>({
@@ -180,8 +180,8 @@ export function useUpdatePedidoStatus() {
 // ── useDeletePedidos (bulk) ───────────────────────────────────────────────────
 
 export function useDeletePedidos() {
-  const qc          = useQueryClient();
-  const uid         = useStore((s) => s.userId);
+  const qc = useQueryClient();
+  const uid = useStore((s) => s.userId);
   const deletePedidos = useStore((s) => s.deletePedidos);
 
   return useMutation<void, Error, string[]>({

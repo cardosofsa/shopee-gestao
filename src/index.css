@@ -25,12 +25,19 @@
   }
 
   body {
-    font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Geist',
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
     background-color: #f8fafc;
     color: #111111;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
   html.dark body {

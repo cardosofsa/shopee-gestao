@@ -1,8 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Trash2, Crown, Shield, Eye, UserCog, Copy, Check, Loader2, Building2, AlertTriangle } from 'lucide-react';
-import { useStore } from '../store';
-import { dbOrganizations, dbOrgInvites, dbOrgMembers } from '../lib/db';
+import {
+  AlertTriangle,
+  Building2,
+  Check,
+  Copy,
+  Crown,
+  Eye,
+  Loader2,
+  Plus,
+  Shield,
+  Trash2,
+  UserCog,
+  Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+
 import { useToast } from '../components/Toast';
+import { dbOrganizations, dbOrgInvites, dbOrgMembers } from '../lib/db';
+import { useStore } from '../store';
 import type { OrgInvite, OrgRole } from '../types';
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -15,20 +29,26 @@ const ROLE_LABELS: Record<OrgRole, string> = {
 };
 
 const ROLE_ICON: Record<OrgRole, React.ElementType> = {
-  owner: Crown, admin: Shield, operador: UserCog, viewer: Eye,
+  owner: Crown,
+  admin: Shield,
+  operador: UserCog,
+  viewer: Eye,
 };
 
 const MANAGEABLE_ROLES: OrgRole[] = ['admin', 'operador', 'viewer'];
 
 function roleBadge(role: OrgRole) {
   const Icon = ROLE_ICON[role];
-  const cls = role === 'owner'
-    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
-    : role === 'admin'
-    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
-    : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+  const cls =
+    role === 'owner'
+      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+      : role === 'admin'
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}
+    >
       <Icon size={11} />
       {ROLE_LABELS[role]}
     </span>
@@ -82,8 +102,12 @@ function CreateOrg() {
             <Building2 size={18} className="text-core-green" />
           </div>
           <div>
-            <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Criar organização</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Você será o proprietário e poderá convidar membros.</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+              Criar organização
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Você será o proprietário e poderá convidar membros.
+            </p>
           </div>
         </div>
         <form onSubmit={handleCreate} className="flex gap-3">
@@ -121,7 +145,8 @@ function PlanGate() {
           Plano atual não inclui CoWork
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-sm mx-auto">
-          O recurso de equipe está disponível a partir do plano Starter. Faça upgrade para convidar colaboradores.
+          O recurso de equipe está disponível a partir do plano Starter. Faça upgrade para convidar
+          colaboradores.
         </p>
         <a
           href="/planos"
@@ -137,10 +162,10 @@ function PlanGate() {
 // ── Main page ─────────────────────────────────────────────────
 
 export default function Equipe() {
-  const userId       = useStore((s) => s.userId)!;
+  const userId = useStore((s) => s.userId)!;
   const subscription = useStore((s) => s.subscription);
   const organization = useStore((s) => s.organization);
-  const orgMembers   = useStore((s) => s.orgMembers);
+  const orgMembers = useStore((s) => s.orgMembers);
   const setOrgMembers = useStore((s) => s.setOrgMembers);
   const setOrganization = useStore((s) => s.setOrganization);
   const loadOrganization = useStore((s) => s.loadOrganization);
@@ -208,7 +233,7 @@ export default function Equipe() {
     if (!organization) return;
     try {
       await dbOrgMembers.updateRole(organization.id, memberId, role);
-      setOrgMembers(orgMembers.map((m) => m.userId === memberId ? { ...m, role } : m));
+      setOrgMembers(orgMembers.map((m) => (m.userId === memberId ? { ...m, role } : m)));
     } catch {
       toast('Erro ao atualizar função.', 'error');
     }
@@ -226,7 +251,10 @@ export default function Equipe() {
 
   async function handleDeleteOrg() {
     if (!organization) return;
-    if (!confirm(`Excluir a organização "${organization.nome}"? Todos os membros perderão o acesso.`)) return;
+    if (
+      !confirm(`Excluir a organização "${organization.nome}"? Todos os membros perderão o acesso.`)
+    )
+      return;
     try {
       await dbOrganizations.delete(organization.id);
       setOrganization(null);
@@ -295,19 +323,32 @@ export default function Equipe() {
                 autoFocus
                 className="flex-1 h-8 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-core-green/40"
               />
-              <button type="submit" disabled={savingNome} className="px-3 h-8 bg-core-green text-white text-xs font-medium rounded-lg hover:bg-core-green-h disabled:opacity-50 transition-colors">
+              <button
+                type="submit"
+                disabled={savingNome}
+                className="px-3 h-8 bg-core-green text-white text-xs font-medium rounded-lg hover:bg-core-green-h disabled:opacity-50 transition-colors"
+              >
                 {savingNome ? <Loader2 size={12} className="animate-spin" /> : 'Salvar'}
               </button>
-              <button type="button" onClick={() => setEditingNome(false)} className="px-3 h-8 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+              <button
+                type="button"
+                onClick={() => setEditingNome(false)}
+                className="px-3 h-8 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              >
                 Cancelar
               </button>
             </form>
           ) : (
             <div className="flex items-center gap-3">
               <Building2 size={16} className="text-slate-400 flex-shrink-0" />
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex-1">{organization.nome}</span>
+              <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex-1">
+                {organization.nome}
+              </span>
               <button
-                onClick={() => { setEditNome(organization.nome); setEditingNome(true); }}
+                onClick={() => {
+                  setEditNome(organization.nome);
+                  setEditingNome(true);
+                }}
                 className="text-xs text-slate-400 hover:text-core-green transition-colors"
               >
                 Renomear
@@ -329,7 +370,9 @@ export default function Equipe() {
                 {(m.email?.[0] ?? '?').toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{m.email}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                  {m.email}
+                </p>
                 <p className="text-xs text-slate-400">
                   Desde {new Date(m.joinedAt).toLocaleDateString('pt-BR')}
                 </p>
@@ -342,7 +385,9 @@ export default function Equipe() {
                     className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-core-green/40"
                   >
                     {MANAGEABLE_ROLES.map((r) => (
-                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                      <option key={r} value={r}>
+                        {ROLE_LABELS[r]}
+                      </option>
                     ))}
                   </select>
                 ) : (
@@ -384,7 +429,9 @@ export default function Equipe() {
               className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-core-green/40"
             >
               {MANAGEABLE_ROLES.map((r) => (
-                <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
               ))}
             </select>
             <button
@@ -403,7 +450,9 @@ export default function Equipe() {
       {invites.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Convites pendentes</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Convites pendentes
+            </p>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
             {invites.map((inv) => (
@@ -411,7 +460,8 @@ export default function Equipe() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-slate-900 dark:text-slate-100 truncate">{inv.email}</p>
                   <p className="text-xs text-slate-400">
-                    {ROLE_LABELS[inv.role]} · Expira {new Date(inv.expiresAt).toLocaleDateString('pt-BR')}
+                    {ROLE_LABELS[inv.role]} · Expira{' '}
+                    {new Date(inv.expiresAt).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -419,7 +469,11 @@ export default function Equipe() {
                     onClick={() => copyLink(inv.token)}
                     className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                   >
-                    {copied === inv.token ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    {copied === inv.token ? (
+                      <Check size={12} className="text-emerald-500" />
+                    ) : (
+                      <Copy size={12} />
+                    )}
                     {copied === inv.token ? 'Copiado!' : 'Copiar link'}
                   </button>
                   {canManage && (
@@ -439,7 +493,9 @@ export default function Equipe() {
 
       {/* Role legend */}
       <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Funções</p>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+          Funções
+        </p>
         <div className="grid grid-cols-2 gap-2">
           {(['owner', 'admin', 'operador', 'viewer'] as OrgRole[]).map((r) => {
             const Icon = ROLE_ICON[r];
@@ -453,7 +509,9 @@ export default function Equipe() {
               <div key={r} className="flex items-start gap-2">
                 <Icon size={13} className="text-slate-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{ROLE_LABELS[r]}</p>
+                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    {ROLE_LABELS[r]}
+                  </p>
                   <p className="text-[11px] text-slate-400">{descs[r]}</p>
                 </div>
               </div>

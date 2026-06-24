@@ -1,15 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import type { Pedido } from '../types';
 import {
-  calcularLucroOperacional,
-  calcularTaxaShopee,
+  agruparPorDia,
   calcularAds,
+  calcularLucroOperacional,
   calcularPrecoIdeal,
+  calcularTaxaShopee,
+  getKPIsMes,
   getRankingProdutos,
   getStatusEstoque,
-  getKPIsMes,
-  agruparPorDia,
 } from '../utils/calculations';
-import type { Pedido } from '../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -101,23 +102,23 @@ describe('calcularPrecoIdeal', () => {
   it('calcula preço quando denominador é positivo', () => {
     const result = calcularPrecoIdeal({
       custo: 20,
-      margemDesejada: 0.30,
+      margemDesejada: 0.3,
       comissaoShopee: 0.18,
       taxaFixa: 4,
       percentualAds: 0.02,
       aliquotaDAS: 0,
     });
     expect(result.precoVenda).toBeGreaterThan(20);
-    expect(result.margemReal).toBeCloseTo(0.30, 1);
+    expect(result.margemReal).toBeCloseTo(0.3, 1);
   });
 
   it('retorna zeros quando denominador é zero ou negativo (inviável)', () => {
     const result = calcularPrecoIdeal({
       custo: 20,
-      margemDesejada: 0.60,
-      comissaoShopee: 0.20,
+      margemDesejada: 0.6,
+      comissaoShopee: 0.2,
       taxaFixa: 0,
-      percentualAds: 0.10,
+      percentualAds: 0.1,
       aliquotaDAS: 0.15,
     });
     expect(result.precoVenda).toBe(0);
@@ -128,7 +129,7 @@ describe('calcularPrecoIdeal', () => {
   it('margem real é lucro dividido pelo preço de venda', () => {
     const result = calcularPrecoIdeal({
       custo: 10,
-      margemDesejada: 0.20,
+      margemDesejada: 0.2,
       comissaoShopee: 0.18,
       taxaFixa: 0,
       percentualAds: 0.02,
@@ -140,12 +141,20 @@ describe('calcularPrecoIdeal', () => {
 
   it('taxa fixa é adicionada ao custo base no denominador', () => {
     const semTaxa = calcularPrecoIdeal({
-      custo: 20, margemDesejada: 0.30, comissaoShopee: 0.18,
-      taxaFixa: 0, percentualAds: 0.02, aliquotaDAS: 0,
+      custo: 20,
+      margemDesejada: 0.3,
+      comissaoShopee: 0.18,
+      taxaFixa: 0,
+      percentualAds: 0.02,
+      aliquotaDAS: 0,
     });
     const comTaxa = calcularPrecoIdeal({
-      custo: 20, margemDesejada: 0.30, comissaoShopee: 0.18,
-      taxaFixa: 10, percentualAds: 0.02, aliquotaDAS: 0,
+      custo: 20,
+      margemDesejada: 0.3,
+      comissaoShopee: 0.18,
+      taxaFixa: 10,
+      percentualAds: 0.02,
+      aliquotaDAS: 0,
     });
     expect(comTaxa.precoVenda).toBeGreaterThan(semTaxa.precoVenda);
   });
@@ -193,10 +202,34 @@ describe('getStatusEstoque', () => {
 
 describe('getKPIsMes', () => {
   const pedidos: Pedido[] = [
-    makePedido({ data: '2025-06-10', status: 'Concluído', receita: 100, lucroOperacional: 30, dasImposto: 5 }),
-    makePedido({ data: '2025-06-20', status: 'Enviado',   receita: 200, lucroOperacional: 60, dasImposto: 10 }),
-    makePedido({ data: '2025-06-15', status: 'Devolvido', receita: 150, lucroOperacional: -20, dasImposto: 0 }),
-    makePedido({ data: '2025-07-01', status: 'Concluído', receita: 500, lucroOperacional: 150, dasImposto: 20 }),
+    makePedido({
+      data: '2025-06-10',
+      status: 'Concluído',
+      receita: 100,
+      lucroOperacional: 30,
+      dasImposto: 5,
+    }),
+    makePedido({
+      data: '2025-06-20',
+      status: 'Enviado',
+      receita: 200,
+      lucroOperacional: 60,
+      dasImposto: 10,
+    }),
+    makePedido({
+      data: '2025-06-15',
+      status: 'Devolvido',
+      receita: 150,
+      lucroOperacional: -20,
+      dasImposto: 0,
+    }),
+    makePedido({
+      data: '2025-07-01',
+      status: 'Concluído',
+      receita: 500,
+      lucroOperacional: 150,
+      dasImposto: 20,
+    }),
   ];
 
   it('soma apenas Concluído e Enviado do mês', () => {
@@ -233,10 +266,38 @@ describe('getKPIsMes', () => {
 
 describe('getRankingProdutos', () => {
   const pedidos: Pedido[] = [
-    makePedido({ sku: 'A', produto: 'Produto A', receita: 600, lucroOperacional: 180, unidadesEstoque: 6, status: 'Concluído' }),
-    makePedido({ sku: 'A', produto: 'Produto A', receita: 400, lucroOperacional: 120, unidadesEstoque: 4, status: 'Concluído' }),
-    makePedido({ sku: 'B', produto: 'Produto B', receita: 200, lucroOperacional: 50,  unidadesEstoque: 2, status: 'Enviado'   }),
-    makePedido({ sku: 'C', produto: 'Produto C', receita: 100, lucroOperacional: 20,  unidadesEstoque: 1, status: 'Devolvido' }),
+    makePedido({
+      sku: 'A',
+      produto: 'Produto A',
+      receita: 600,
+      lucroOperacional: 180,
+      unidadesEstoque: 6,
+      status: 'Concluído',
+    }),
+    makePedido({
+      sku: 'A',
+      produto: 'Produto A',
+      receita: 400,
+      lucroOperacional: 120,
+      unidadesEstoque: 4,
+      status: 'Concluído',
+    }),
+    makePedido({
+      sku: 'B',
+      produto: 'Produto B',
+      receita: 200,
+      lucroOperacional: 50,
+      unidadesEstoque: 2,
+      status: 'Enviado',
+    }),
+    makePedido({
+      sku: 'C',
+      produto: 'Produto C',
+      receita: 100,
+      lucroOperacional: 20,
+      unidadesEstoque: 1,
+      status: 'Devolvido',
+    }),
   ];
 
   it('ignora pedidos com status Devolvido', () => {
@@ -286,7 +347,7 @@ describe('getRankingProdutos', () => {
 describe('agruparPorDia', () => {
   const pedidos: Pedido[] = [
     makePedido({ data: '2025-06-01', status: 'Concluído', receita: 100, lucroOperacional: 30 }),
-    makePedido({ data: '2025-06-01', status: 'Enviado',   receita: 50,  lucroOperacional: 15 }),
+    makePedido({ data: '2025-06-01', status: 'Enviado', receita: 50, lucroOperacional: 15 }),
     makePedido({ data: '2025-06-15', status: 'Concluído', receita: 200, lucroOperacional: 60 }),
     makePedido({ data: '2025-07-01', status: 'Concluído', receita: 999, lucroOperacional: 300 }),
     makePedido({ data: '2025-06-10', status: 'Devolvido', receita: 150, lucroOperacional: -20 }),

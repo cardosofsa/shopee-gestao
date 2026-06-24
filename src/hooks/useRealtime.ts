@@ -1,30 +1,58 @@
 import { useEffect } from 'react';
+
 import { supabase } from '../lib/supabase';
 import { useStore } from '../store';
 import type { Pedido, Produto, Tarefa } from '../types';
 
+type DbRow = Record<string, unknown>;
+
 // Mirror the private mappers in db.ts — kept local to avoid coupling
-const rowToPedido = (r: any): Pedido => ({
-  id: r.id, numeroPedido: r.numero_pedido, data: r.data, status: r.status,
-  loja: r.loja, sku: r.sku, produto: r.produto, quantidade: r.quantidade,
-  multiplicadorKit: r.multiplicador_kit, unidadesEstoque: r.unidades_estoque,
-  receita: Number(r.receita), desconto: Number(r.desconto), custoTotal: Number(r.custo_total),
-  taxaShopee: Number(r.taxa_shopee), dasImposto: Number(r.das_imposto),
-  adsMarketing: Number(r.ads_marketing), lucroOperacional: Number(r.lucro_operacional),
-  margemSCustoProduto: Number(r.margem_s_custo_produto),
-  margemSCustoTotal: Number(r.margem_s_custo_total),
+const s = (v: unknown) => v as string;
+const n = (v: unknown) => Number(v);
+const b = (v: unknown) => Boolean(v);
+
+const rowToPedido = (r: DbRow): Pedido => ({
+  id: s(r.id),
+  numeroPedido: s(r.numero_pedido),
+  data: s(r.data),
+  status: r.status as Pedido['status'],
+  loja: s(r.loja),
+  sku: s(r.sku),
+  produto: s(r.produto),
+  quantidade: n(r.quantidade),
+  multiplicadorKit: n(r.multiplicador_kit),
+  unidadesEstoque: n(r.unidades_estoque),
+  receita: n(r.receita),
+  desconto: n(r.desconto),
+  custoTotal: n(r.custo_total),
+  taxaShopee: n(r.taxa_shopee),
+  dasImposto: n(r.das_imposto),
+  adsMarketing: n(r.ads_marketing),
+  lucroOperacional: n(r.lucro_operacional),
+  margemSCustoProduto: n(r.margem_s_custo_produto),
+  margemSCustoTotal: n(r.margem_s_custo_total),
 });
 
-const rowToProduto = (r: any): Produto => ({
-  sku: r.sku, nome: r.nome, categoria: r.categoria, loja: r.loja,
-  custoUnitario: Number(r.custo_unitario), estoqueSeguranca: r.estoque_seguranca,
-  estoqueAtual: r.estoque_atual, ativo: r.ativo,
+const rowToProduto = (r: DbRow): Produto => ({
+  sku: s(r.sku),
+  nome: s(r.nome),
+  categoria: s(r.categoria),
+  loja: s(r.loja),
+  custoUnitario: n(r.custo_unitario),
+  estoqueSeguranca: n(r.estoque_seguranca),
+  estoqueAtual: n(r.estoque_atual),
+  ativo: b(r.ativo),
 });
 
-const rowToTarefa = (r: any): Tarefa => ({
-  id: r.id, titulo: r.titulo, descricao: r.descricao, coluna: r.coluna,
-  posicao: r.posicao, dataVencimento: r.data_vencimento ?? undefined,
-  prioridade: r.prioridade, criadoEm: r.created_at ?? r.criado_em,
+const rowToTarefa = (r: DbRow): Tarefa => ({
+  id: s(r.id),
+  titulo: s(r.titulo),
+  descricao: s(r.descricao ?? ''),
+  coluna: r.coluna as Tarefa['coluna'],
+  posicao: n(r.posicao),
+  dataVencimento: r.data_vencimento != null ? s(r.data_vencimento) : undefined,
+  prioridade: r.prioridade as Tarefa['prioridade'],
+  criadoEm: s(r.created_at ?? r.criado_em ?? ''),
 });
 
 export function useRealtime(userId: string | null) {
@@ -52,10 +80,10 @@ export function useRealtime(userId: string | null) {
               pedidos: s.pedidos.map((x) => (x.id === p.id ? p : x)),
             }));
           } else if (eventType === 'DELETE') {
-            const id: string | undefined = (or as any)?.id;
+            const id: string | undefined = (or as DbRow)?.id as string | undefined;
             if (id) useStore.setState((s) => ({ pedidos: s.pedidos.filter((x) => x.id !== id) }));
           }
-        },
+        }
       )
 
       // ── Produtos ─────────────────────────────────────────────
@@ -74,10 +102,11 @@ export function useRealtime(userId: string | null) {
               return { produtos: next };
             });
           } else if (eventType === 'DELETE') {
-            const sku: string | undefined = (or as any)?.sku;
-            if (sku) useStore.setState((s) => ({ produtos: s.produtos.filter((x) => x.sku !== sku) }));
+            const sku: string | undefined = (or as DbRow)?.sku as string | undefined;
+            if (sku)
+              useStore.setState((s) => ({ produtos: s.produtos.filter((x) => x.sku !== sku) }));
           }
-        },
+        }
       )
 
       // ── Tarefas ──────────────────────────────────────────────
@@ -98,10 +127,10 @@ export function useRealtime(userId: string | null) {
               tarefas: s.tarefas.map((x) => (x.id === t.id ? t : x)),
             }));
           } else if (eventType === 'DELETE') {
-            const id: string | undefined = (or as any)?.id;
+            const id: string | undefined = (or as DbRow)?.id as string | undefined;
             if (id) useStore.setState((s) => ({ tarefas: s.tarefas.filter((x) => x.id !== id) }));
           }
-        },
+        }
       )
 
       .subscribe();

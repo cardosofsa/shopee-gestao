@@ -16,6 +16,9 @@ dist-ssr
 playwright-report/
 test-results/
 
+# Test coverage
+coverage/
+
 # Claude Code memory (local only)
 .claude/
 

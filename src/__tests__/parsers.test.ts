@@ -1,34 +1,96 @@
-import { describe, it, expect } from 'vitest';
-import { mapearStatus } from '../import/parsers/common';
-import { mapearSKU, parseShopeeNativo } from '../import/parsers/shopee';
-import { mapearSkuUpseller, mapearLojaUpseller, parseUpseller } from '../import/parsers/upseller';
-import { parseGenerico } from '../import/parsers/generico';
+import { describe, expect, it } from 'vitest';
+
 import { parseImportRows } from '../import/parsers';
-import type { Produto, Configuracoes } from '../types';
+import { mapearStatus } from '../import/parsers/common';
+import { parseGenerico } from '../import/parsers/generico';
+import { mapearSKU, parseShopeeNativo } from '../import/parsers/shopee';
+import { mapearLojaUpseller, mapearSkuUpseller, parseUpseller } from '../import/parsers/upseller';
+import type { Configuracoes, Produto } from '../types';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const PRODUTOS: Produto[] = [
-  { sku: 'ALF-118',   nome: 'Alfazema 118ml',      categoria: 'Perfumaria', loja: 'Cardoso e-Shop', custoUnitario: 6.08,  estoqueSeguranca: 50, estoqueAtual: 266, ativo: true },
-  { sku: 'ALF-500',   nome: 'Alfazema 500ml',      categoria: 'Perfumaria', loja: 'Cardoso e-Shop', custoUnitario: 4.70,  estoqueSeguranca: 10, estoqueAtual: 0,   ativo: true },
-  { sku: 'FITA-BIKE', nome: 'Fita Antifuro Bike',  categoria: 'Moto/Bike',  loja: 'Ambas',          custoUnitario: 10.00, estoqueSeguranca: 10, estoqueAtual: 0,   ativo: true },
-  { sku: 'FITA-MOTO', nome: 'Fita Antifuro Moto',  categoria: 'Moto/Bike',  loja: 'Ambas',          custoUnitario: 28.00, estoqueSeguranca: 15, estoqueAtual: 10,  ativo: true },
-  { sku: 'FITA-PCX',  nome: 'Fita Antifuro PCX',   categoria: 'Moto/Bike',  loja: 'Ambas',          custoUnitario: 10.00, estoqueSeguranca: 10, estoqueAtual: 0,   ativo: true },
-  { sku: 'BAINHAC',   nome: 'Bainha de Couro',     categoria: 'Acessórios', loja: 'Ambas',          custoUnitario: 3.00,  estoqueSeguranca: 10, estoqueAtual: 0,   ativo: true },
+  {
+    sku: 'ALF-118',
+    nome: 'Alfazema 118ml',
+    categoria: 'Perfumaria',
+    loja: 'Cardoso e-Shop',
+    custoUnitario: 6.08,
+    estoqueSeguranca: 50,
+    estoqueAtual: 266,
+    ativo: true,
+  },
+  {
+    sku: 'ALF-500',
+    nome: 'Alfazema 500ml',
+    categoria: 'Perfumaria',
+    loja: 'Cardoso e-Shop',
+    custoUnitario: 4.7,
+    estoqueSeguranca: 10,
+    estoqueAtual: 0,
+    ativo: true,
+  },
+  {
+    sku: 'FITA-BIKE',
+    nome: 'Fita Antifuro Bike',
+    categoria: 'Moto/Bike',
+    loja: 'Ambas',
+    custoUnitario: 10.0,
+    estoqueSeguranca: 10,
+    estoqueAtual: 0,
+    ativo: true,
+  },
+  {
+    sku: 'FITA-MOTO',
+    nome: 'Fita Antifuro Moto',
+    categoria: 'Moto/Bike',
+    loja: 'Ambas',
+    custoUnitario: 28.0,
+    estoqueSeguranca: 15,
+    estoqueAtual: 10,
+    ativo: true,
+  },
+  {
+    sku: 'FITA-PCX',
+    nome: 'Fita Antifuro PCX',
+    categoria: 'Moto/Bike',
+    loja: 'Ambas',
+    custoUnitario: 10.0,
+    estoqueSeguranca: 10,
+    estoqueAtual: 0,
+    ativo: true,
+  },
+  {
+    sku: 'BAINHAC',
+    nome: 'Bainha de Couro',
+    categoria: 'Acessórios',
+    loja: 'Ambas',
+    custoUnitario: 3.0,
+    estoqueSeguranca: 10,
+    estoqueAtual: 0,
+    ativo: true,
+  },
 ];
 
-const CONF: Configuracoes = { aliquotaDAS: 6, percentualMarketing: 2, lojas: ['Cardoso e-Shop', 'Projetando'] };
+const CONF: Configuracoes = {
+  aliquotaDAS: 6,
+  percentualMarketing: 2,
+  lojas: ['Cardoso e-Shop', 'Projetando'],
+};
 
 // ─── mapearStatus ─────────────────────────────────────────────────────────────
 
 describe('mapearStatus', () => {
   it('"A enviar" → "Em processo"', () => expect(mapearStatus('A enviar')).toBe('Em processo'));
-  it('"para entregar" → "Em processo"', () => expect(mapearStatus('Para Entregar')).toBe('Em processo'));
-  it('"pendente" → "Em processo"', () => expect(mapearStatus('Pedido pendente')).toBe('Em processo'));
+  it('"para entregar" → "Em processo"', () =>
+    expect(mapearStatus('Para Entregar')).toBe('Em processo'));
+  it('"pendente" → "Em processo"', () =>
+    expect(mapearStatus('Pedido pendente')).toBe('Em processo'));
   it('"enviado" → "Enviado"', () => expect(mapearStatus('enviado')).toBe('Enviado'));
   it('"Em trânsito" → "Enviado"', () => expect(mapearStatus('Em Trânsito')).toBe('Enviado'));
   it('"Devolvido" → "Devolvido"', () => expect(mapearStatus('Devolvido')).toBe('Devolvido'));
-  it('"reembolso" → "Devolvido"', () => expect(mapearStatus('reembolso solicitado')).toBe('Devolvido'));
+  it('"reembolso" → "Devolvido"', () =>
+    expect(mapearStatus('reembolso solicitado')).toBe('Devolvido'));
   it('"retorno" → "Devolvido"', () => expect(mapearStatus('em retorno')).toBe('Devolvido'));
   it('desconhecido → "Concluído"', () => expect(mapearStatus('Entregue')).toBe('Concluído'));
   it('vazio → "Concluído"', () => expect(mapearStatus('')).toBe('Concluído'));
@@ -139,25 +201,25 @@ const shopeeRows = [
     'Número de referência SKU': 'FITA-BIKE-UN',
     'Nº de referência do SKU principal': 'FITAANTIFURO-BIKE',
     'Nome do Produto': 'Fita Antifuro para Bicicleta',
-    'Quantidade': 2,
-    'Subtotal do produto': 50.00,
-    'Preço acordado': 25.00,
-    'Desconto do vendedor': 5.00,
-    'Taxa de comissão líquida': 8.00,
-    'Taxa de serviço líquida': 2.00,
+    Quantidade: 2,
+    'Subtotal do produto': 50.0,
+    'Preço acordado': 25.0,
+    'Desconto do vendedor': 5.0,
+    'Taxa de comissão líquida': 8.0,
+    'Taxa de serviço líquida': 2.0,
     'Data de criação do pedido': '2026-06-15',
   },
   {
     'ID do pedido': '260615ABC002',
-    'Status do pedido': 'Cancelado pelo comprador',  // deve ser filtrado
+    'Status do pedido': 'Cancelado pelo comprador', // deve ser filtrado
     'Número de referência SKU': 'ALF-118',
     'Nº de referência do SKU principal': '',
     'Nome do Produto': 'Alfazema 118ml',
-    'Quantidade': 1,
-    'Subtotal do produto': 25.00,
-    'Preço acordado': 25.00,
+    Quantidade: 1,
+    'Subtotal do produto': 25.0,
+    'Preço acordado': 25.0,
     'Desconto do vendedor': 0,
-    'Taxa de comissão líquida': 5.00,
+    'Taxa de comissão líquida': 5.0,
     'Taxa de serviço líquida': 0,
     'Data de criação do pedido': '2026-06-15',
   },
@@ -167,11 +229,11 @@ const shopeeRows = [
     'Número de referência SKU': 'ALFAZEMA',
     'Nº de referência do SKU principal': '',
     'Nome do Produto': 'Alfazema 118ml',
-    'Quantidade': 3,
-    'Subtotal do produto': 0,          // usa precoAc * qtd
-    'Preço acordado': 25.00,
+    Quantidade: 3,
+    'Subtotal do produto': 0, // usa precoAc * qtd
+    'Preço acordado': 25.0,
     'Desconto do vendedor': 0,
-    'Taxa de comissão líquida': 15.00,
+    'Taxa de comissão líquida': 15.0,
     'Taxa de serviço líquida': 0,
     'Data de criação do pedido': '2026-06-15',
   },
@@ -249,7 +311,7 @@ const upsellerRows = [
   {
     'Nº de Pedido da Plataforma': '260615UPS001',
     'Estado do Pedido': 'Entregue',
-    'SKU': 'ALF-118-UN',
+    SKU: 'ALF-118-UN',
     'Nome da Loja no UpSeller': 'Cardoso e-Shop Oficial',
     'Qtd. do Produto': '2',
     'Valor do Pedido': '50.00',
@@ -257,8 +319,8 @@ const upsellerRows = [
   },
   {
     'Nº de Pedido da Plataforma': '260615UPS002',
-    'Estado do Pedido': 'Cancelado',  // deve ser filtrado
-    'SKU': 'FITA-BIKE-UN',
+    'Estado do Pedido': 'Cancelado', // deve ser filtrado
+    SKU: 'FITA-BIKE-UN',
     'Nome da Loja no UpSeller': 'Cardoso e-Shop',
     'Qtd. do Produto': '1',
     'Valor do Pedido': '30.00',
@@ -267,7 +329,7 @@ const upsellerRows = [
   {
     'Nº de Pedido da Plataforma': '260615UPS003',
     'Estado do Pedido': 'Entregue',
-    'SKU': 'FITA-MOTO-KIT2',
+    SKU: 'FITA-MOTO-KIT2',
     'Nome da Loja no UpSeller': 'Projetando',
     'Qtd. do Produto': '1',
     'Valor do Pedido': '80.00',
@@ -328,27 +390,27 @@ describe('parseUpseller', () => {
 
 const genericoRows = [
   {
-    'Nº Pedido':       'MANUAL001',
-    'Data':            '2026-06-15',
-    'Status':          'Concluído',
-    'Loja':            'Cardoso e-Shop',
-    'SKU':             'ALF-118',
-    'Produto':         'Alfazema 118ml',
-    'Qtd.':            '1',
-    'Receita (R$)':    '25.00',
-    'Desconto(R$)':    '2.00',
-    'CustoTotal':      '6.08',
-    'Taxa Shopee':     '5.00',
-    'ADS':             '0.50',
+    'Nº Pedido': 'MANUAL001',
+    Data: '2026-06-15',
+    Status: 'Concluído',
+    Loja: 'Cardoso e-Shop',
+    SKU: 'ALF-118',
+    Produto: 'Alfazema 118ml',
+    'Qtd.': '1',
+    'Receita (R$)': '25.00',
+    'Desconto(R$)': '2.00',
+    CustoTotal: '6.08',
+    'Taxa Shopee': '5.00',
+    ADS: '0.50',
   },
   {
-    'numeroPedido':    'MANUAL002',
-    'data':            '2026-06-14',
-    'status':          'Enviado',
-    'loja':            'Projetando',
-    'sku':             'FITA-MOTO',
-    'produto':         'Fita Antifuro Moto',
-    'Receita (R$)':    '80.00',
+    numeroPedido: 'MANUAL002',
+    data: '2026-06-14',
+    status: 'Enviado',
+    loja: 'Projetando',
+    sku: 'FITA-MOTO',
+    produto: 'Fita Antifuro Moto',
+    'Receita (R$)': '80.00',
   },
 ];
 
@@ -387,25 +449,19 @@ describe('parseGenerico', () => {
 
 describe('parseImportRows — detecção de formato', () => {
   it('detecta Shopee Nativo pelo campo "ID do pedido"', () => {
-    const { formato, isShopeeNativo } = parseImportRows(
-      [shopeeRows[0]], PRODUTOS, CONF,
-    );
+    const { formato, isShopeeNativo } = parseImportRows([shopeeRows[0]], PRODUTOS, CONF);
     expect(formato).toBe('shopee_nativo');
     expect(isShopeeNativo).toBe(true);
   });
 
   it('detecta UpSeller pelo campo "Nº de Pedido da Plataforma"', () => {
-    const { formato, isShopeeNativo } = parseImportRows(
-      [upsellerRows[0]], PRODUTOS, CONF,
-    );
+    const { formato, isShopeeNativo } = parseImportRows([upsellerRows[0]], PRODUTOS, CONF);
     expect(formato).toBe('upseller');
     expect(isShopeeNativo).toBe(false);
   });
 
   it('detecta Genérico como fallback', () => {
-    const { formato, isShopeeNativo } = parseImportRows(
-      [genericoRows[0]], PRODUTOS, CONF,
-    );
+    const { formato, isShopeeNativo } = parseImportRows([genericoRows[0]], PRODUTOS, CONF);
     expect(formato).toBe('generico');
     expect(isShopeeNativo).toBe(false);
   });

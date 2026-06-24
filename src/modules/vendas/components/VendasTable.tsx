@@ -1,23 +1,41 @@
-import { useRef, useState, useEffect, Fragment } from 'react';
-import {
-  ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square,
-  ChevronLeft, ChevronRight, ChevronDown, Pencil, Trash2, Check,
-} from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  CheckSquare,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Square,
+  Trash2,
+} from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+
 import { useStore } from '../../../store';
 import type { Pedido } from '../../../types';
-import { STATUS_OPTIONS, STATUS_STYLE } from '../types';
 import type { ColDef, PagTotais, StatusPedido } from '../types';
+import { STATUS_OPTIONS, STATUS_STYLE } from '../types';
 
 // ─── SortIcon ─────────────────────────────────────────────────────────────────
 
-function SortIcon({ col, sortCol, sortDir }: {
-  col: string; sortCol: string | null; sortDir: 'asc' | 'desc';
+function SortIcon({
+  col,
+  sortCol,
+  sortDir,
+}: {
+  col: string;
+  sortCol: string | null;
+  sortDir: 'asc' | 'desc';
 }) {
   if (sortCol !== col) return <ArrowUpDown size={11} className="ml-1 opacity-30 flex-shrink-0" />;
-  return sortDir === 'asc'
-    ? <ArrowUp   size={11} className="ml-1 text-core-green flex-shrink-0" />
-    : <ArrowDown size={11} className="ml-1 text-core-green flex-shrink-0" />;
+  return sortDir === 'asc' ? (
+    <ArrowUp size={11} className="ml-1 text-core-green flex-shrink-0" />
+  ) : (
+    <ArrowDown size={11} className="ml-1 text-core-green flex-shrink-0" />
+  );
 }
 
 // ─── getPages ─────────────────────────────────────────────────────────────────
@@ -25,7 +43,8 @@ function SortIcon({ col, sortCol, sortDir }: {
 function getPages(cur: number, total: number): (number | '…')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | '…')[] = [1];
-  const lo = Math.max(2, cur - 2), hi = Math.min(total - 1, cur + 2);
+  const lo = Math.max(2, cur - 2),
+    hi = Math.min(total - 1, cur + 2);
   if (lo > 2) pages.push('…');
   for (let i = lo; i <= hi; i++) pages.push(i);
   if (hi < total - 1) pages.push('…');
@@ -53,19 +72,30 @@ function StatusBadge({ pedidoId, current }: { pedidoId: string; current: StatusP
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${badge} hover:opacity-80`}
       >
         {current}
-        <ChevronDown size={9} className={`opacity-50 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          size={9}
+          className={`opacity-50 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 overflow-hidden min-w-[155px]">
           {STATUS_OPTIONS.map((s) => {
             const isCur = s === current;
             return (
-              <button key={s}
-                onClick={(e) => { e.stopPropagation(); updatePedidoStatus(pedidoId, s); setOpen(false); }}
+              <button
+                key={s}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updatePedidoStatus(pedidoId, s);
+                  setOpen(false);
+                }}
                 className={`w-full text-left px-3 py-2.5 text-xs font-medium flex items-center gap-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 ${
                   isCur
                     ? 'text-core-green bg-core-green/5 dark:bg-core-green/10 dark:text-core-green'
@@ -87,9 +117,9 @@ function StatusBadge({ pedidoId, current }: { pedidoId: string; current: StatusP
 // ─── MarginBar ────────────────────────────────────────────────────────────────
 
 function MarginBar({ value }: { value: number }) {
-  const w     = Math.min(100, Math.max(0, value));
+  const w = Math.min(100, Math.max(0, value));
   const color = value >= 30 ? 'bg-emerald-400' : value >= 10 ? 'bg-amber-400' : 'bg-red-400';
-  const text  = value >= 30 ? 'text-emerald-600' : value >= 10 ? 'text-amber-600' : 'text-red-500';
+  const text = value >= 30 ? 'text-emerald-600' : value >= 10 ? 'text-amber-600' : 'text-red-500';
   return (
     <div className="flex items-center gap-2 min-w-[90px]">
       <div className="w-14 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex-shrink-0">
@@ -131,13 +161,29 @@ export interface VendasTableProps {
 // ─── VendasTable ─────────────────────────────────────────────────────────────
 
 export function VendasTable({
-  rows, filteredCount, pageTotais,
-  page, pageSize, totalPages, onPageChange, onPageSizeChange,
-  sortCol, sortDir, onSort,
-  visibleCols, visibleColsList, totalColsCount,
-  selectedIds, allSelected, onToggleSelect, onToggleSelectAll,
-  expandedIds, onToggleExpand,
-  onEdit, onDelete, fmt,
+  rows,
+  filteredCount,
+  pageTotais,
+  page,
+  pageSize,
+  totalPages,
+  onPageChange,
+  onPageSizeChange,
+  sortCol,
+  sortDir,
+  onSort,
+  visibleCols,
+  visibleColsList,
+  totalColsCount,
+  selectedIds,
+  allSelected,
+  onToggleSelect,
+  onToggleSelectAll,
+  expandedIds,
+  onToggleExpand,
+  onEdit,
+  onDelete,
+  fmt,
 }: VendasTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -152,12 +198,11 @@ export function VendasTable({
         : undefined,
   });
 
-  const virtualItems    = rowVirtualizer.getVirtualItems();
+  const virtualItems = rowVirtualizer.getVirtualItems();
   const totalVirtHeight = rowVirtualizer.getTotalSize();
-  const paddingTop    = virtualItems.length > 0 ? virtualItems[0].start : 0;
-  const paddingBottom = virtualItems.length > 0
-    ? totalVirtHeight - virtualItems[virtualItems.length - 1].end
-    : 0;
+  const paddingTop = virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom =
+    virtualItems.length > 0 ? totalVirtHeight - virtualItems[virtualItems.length - 1].end : 0;
 
   return (
     <div className="card overflow-hidden">
@@ -167,16 +212,23 @@ export function VendasTable({
           <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
             <tr>
               <th className="px-3 py-3 w-8">
-                <button onClick={onToggleSelectAll}
-                  className="text-slate-400 hover:text-core-green transition-colors">
-                  {allSelected
-                    ? <CheckSquare size={15} className="text-core-green" />
-                    : <Square size={15} />}
+                <button
+                  onClick={onToggleSelectAll}
+                  className="text-slate-400 hover:text-core-green transition-colors"
+                >
+                  {allSelected ? (
+                    <CheckSquare size={15} className="text-core-green" />
+                  ) : (
+                    <Square size={15} />
+                  )}
                 </button>
               </th>
               {visibleColsList.map((col) => (
-                <th key={col.key} onClick={() => onSort(col.key)}
-                  className="px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap cursor-pointer select-none hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                <th
+                  key={col.key}
+                  onClick={() => onSort(col.key)}
+                  className="px-3 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap cursor-pointer select-none hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                >
                   <span className="inline-flex items-center">
                     {col.label}
                     <SortIcon col={col.key} sortCol={sortCol} sortDir={sortDir} />
@@ -191,20 +243,25 @@ export function VendasTable({
           <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={totalColsCount} className="text-center py-14 text-slate-400 dark:text-slate-500 text-sm">
+                <td
+                  colSpan={totalColsCount}
+                  className="text-center py-14 text-slate-400 dark:text-slate-500 text-sm"
+                >
                   Nenhum pedido encontrado.
                 </td>
               </tr>
             ) : (
               <>
                 {paddingTop > 0 && (
-                  <tr aria-hidden><td style={{ height: paddingTop }} colSpan={totalColsCount} /></tr>
+                  <tr aria-hidden>
+                    <td style={{ height: paddingTop }} colSpan={totalColsCount} />
+                  </tr>
                 )}
 
                 {virtualItems.map((vItem) => {
                   const p = rows[vItem.index];
                   const isExpanded = expandedIds.has(p.id);
-                  const custoUnit  = p.unidadesEstoque > 0 ? p.custoTotal / p.unidadesEstoque : 0;
+                  const custoUnit = p.unidadesEstoque > 0 ? p.custoTotal / p.unidadesEstoque : 0;
                   return (
                     <Fragment key={p.id}>
                       <tr
@@ -218,35 +275,90 @@ export function VendasTable({
                           selectedIds.has(p.id)
                             ? 'bg-core-green/5 dark:bg-core-green/10 hover:bg-core-green/5 dark:hover:bg-core-green/10'
                             : isExpanded
-                            ? 'bg-slate-50/80 dark:bg-slate-700/30'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/20'
+                              ? 'bg-slate-50/80 dark:bg-slate-700/30'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-700/20'
                         }`}
                       >
                         <td className="px-3 py-2.5">
                           <button
-                            onClick={(e) => { e.stopPropagation(); onToggleSelect(p.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleSelect(p.id);
+                            }}
                             className="text-slate-300 hover:text-core-green transition-colors"
                           >
-                            {selectedIds.has(p.id)
-                              ? <CheckSquare size={15} className="text-core-green" />
-                              : <Square size={15} />}
+                            {selectedIds.has(p.id) ? (
+                              <CheckSquare size={15} className="text-core-green" />
+                            ) : (
+                              <Square size={15} />
+                            )}
                           </button>
                         </td>
 
-                        {visibleCols.has('data')             && <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{p.data.slice(0, 10)}</td>}
-                        {visibleCols.has('numeroPedido')     && <td className="px-3 py-2.5 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">{p.numeroPedido}</td>}
-                        {visibleCols.has('status')           && <td className="px-3 py-2.5"><StatusBadge pedidoId={p.id} current={p.status} /></td>}
-                        {visibleCols.has('loja')             && <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">{p.loja}</td>}
-                        {visibleCols.has('sku')              && <td className="px-3 py-2.5 font-mono text-xs font-medium text-slate-700 dark:text-slate-200">{p.sku}</td>}
-                        {visibleCols.has('produto')          && <td className="px-3 py-2.5 text-slate-800 dark:text-slate-100 whitespace-nowrap max-w-[180px] truncate">{p.produto}</td>}
-                        {visibleCols.has('unidadesEstoque')  && <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 text-center">{p.unidadesEstoque}</td>}
-                        {visibleCols.has('receita')          && <td className="px-3 py-2.5 text-slate-800 dark:text-slate-100 font-medium whitespace-nowrap">{fmt(p.receita)}</td>}
-                        {visibleCols.has('desconto')         && <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{p.desconto > 0 ? fmt(p.desconto) : '—'}</td>}
-                        {visibleCols.has('custoTotal')       && <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmt(p.custoTotal)}</td>}
-                        {visibleCols.has('taxaShopee')       && <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{fmt(p.taxaShopee)}</td>}
-                        {visibleCols.has('adsMarketing')     && <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">{fmt(p.adsMarketing)}</td>}
+                        {visibleCols.has('data') && (
+                          <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {p.data.slice(0, 10)}
+                          </td>
+                        )}
+                        {visibleCols.has('numeroPedido') && (
+                          <td className="px-3 py-2.5 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {p.numeroPedido}
+                          </td>
+                        )}
+                        {visibleCols.has('status') && (
+                          <td className="px-3 py-2.5">
+                            <StatusBadge pedidoId={p.id} current={p.status} />
+                          </td>
+                        )}
+                        {visibleCols.has('loja') && (
+                          <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {p.loja}
+                          </td>
+                        )}
+                        {visibleCols.has('sku') && (
+                          <td className="px-3 py-2.5 font-mono text-xs font-medium text-slate-700 dark:text-slate-200">
+                            {p.sku}
+                          </td>
+                        )}
+                        {visibleCols.has('produto') && (
+                          <td className="px-3 py-2.5 text-slate-800 dark:text-slate-100 whitespace-nowrap max-w-[180px] truncate">
+                            {p.produto}
+                          </td>
+                        )}
+                        {visibleCols.has('unidadesEstoque') && (
+                          <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 text-center">
+                            {p.unidadesEstoque}
+                          </td>
+                        )}
+                        {visibleCols.has('receita') && (
+                          <td className="px-3 py-2.5 text-slate-800 dark:text-slate-100 font-medium whitespace-nowrap">
+                            {fmt(p.receita)}
+                          </td>
+                        )}
+                        {visibleCols.has('desconto') && (
+                          <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {p.desconto > 0 ? fmt(p.desconto) : '—'}
+                          </td>
+                        )}
+                        {visibleCols.has('custoTotal') && (
+                          <td className="px-3 py-2.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            {fmt(p.custoTotal)}
+                          </td>
+                        )}
+                        {visibleCols.has('taxaShopee') && (
+                          <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {fmt(p.taxaShopee)}
+                          </td>
+                        )}
+                        {visibleCols.has('adsMarketing') && (
+                          <td className="px-3 py-2.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            {fmt(p.adsMarketing)}
+                          </td>
+                        )}
                         {visibleCols.has('lucroOperacional') && (
-                          <td className={`px-3 py-2.5 font-medium whitespace-nowrap ${p.lucroOperacional >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          <td
+                            className={`px-3 py-2.5 font-medium whitespace-nowrap ${p.lucroOperacional >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
+                          >
                             {fmt(p.lucroOperacional)}
                           </td>
                         )}
@@ -259,14 +371,20 @@ export function VendasTable({
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={(e) => { e.stopPropagation(); onEdit(p); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(p);
+                              }}
                               className="text-slate-300 hover:text-blue-400 transition-colors"
                               title="Editar"
                             >
                               <Pencil size={14} />
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); onDelete(p.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(p.id);
+                              }}
                               className="text-slate-300 hover:text-red-400 transition-colors"
                               title="Excluir"
                             >
@@ -283,32 +401,44 @@ export function VendasTable({
                             <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
                               <div>
                                 <span className="text-slate-400">Qtd. pedida: </span>
-                                <span className="font-medium text-slate-700 dark:text-slate-200">{p.quantidade}</span>
+                                <span className="font-medium text-slate-700 dark:text-slate-200">
+                                  {p.quantidade}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-slate-400">Mult. kit: </span>
-                                <span className="font-medium text-slate-700 dark:text-slate-200">{p.multiplicadorKit}×</span>
+                                <span className="font-medium text-slate-700 dark:text-slate-200">
+                                  {p.multiplicadorKit}×
+                                </span>
                               </div>
                               <div>
                                 <span className="text-slate-400">Custo unit.: </span>
-                                <span className="font-medium text-slate-700 dark:text-slate-200">{fmt(custoUnit)}</span>
+                                <span className="font-medium text-slate-700 dark:text-slate-200">
+                                  {fmt(custoUnit)}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-slate-400">Margem s/ custo: </span>
-                                <span className={`font-medium ${p.margemSCustoProduto >= 30 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                <span
+                                  className={`font-medium ${p.margemSCustoProduto >= 30 ? 'text-emerald-600' : 'text-amber-600'}`}
+                                >
                                   {p.margemSCustoProduto.toFixed(1)}%
                                 </span>
                               </div>
                               {p.dasImposto > 0 && (
                                 <div>
                                   <span className="text-slate-400">DAS: </span>
-                                  <span className="font-medium text-slate-700 dark:text-slate-200">{fmt(p.dasImposto)}</span>
+                                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                                    {fmt(p.dasImposto)}
+                                  </span>
                                 </div>
                               )}
                               {p.observacoes && (
                                 <div className="w-full mt-0.5">
                                   <span className="text-slate-400">Obs.: </span>
-                                  <span className="text-slate-600 dark:text-slate-300 italic">{p.observacoes}</span>
+                                  <span className="text-slate-600 dark:text-slate-300 italic">
+                                    {p.observacoes}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -320,7 +450,9 @@ export function VendasTable({
                 })}
 
                 {paddingBottom > 0 && (
-                  <tr aria-hidden><td style={{ height: paddingBottom }} colSpan={totalColsCount} /></tr>
+                  <tr aria-hidden>
+                    <td style={{ height: paddingBottom }} colSpan={totalColsCount} />
+                  </tr>
                 )}
               </>
             )}
@@ -330,25 +462,40 @@ export function VendasTable({
           {rows.length > 0 && (
             <tfoot className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 sticky bottom-0">
               <tr className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <td className="px-3 py-2.5" colSpan={
-                  2 +
-                  (visibleCols.has('data')            ? 1 : 0) +
-                  (visibleCols.has('numeroPedido')    ? 1 : 0) +
-                  (visibleCols.has('status')          ? 1 : 0) +
-                  (visibleCols.has('loja')            ? 1 : 0) +
-                  (visibleCols.has('sku')             ? 1 : 0) +
-                  (visibleCols.has('produto')         ? 1 : 0) +
-                  (visibleCols.has('unidadesEstoque') ? 1 : 0)
-                }>
+                <td
+                  className="px-3 py-2.5"
+                  colSpan={
+                    2 +
+                    (visibleCols.has('data') ? 1 : 0) +
+                    (visibleCols.has('numeroPedido') ? 1 : 0) +
+                    (visibleCols.has('status') ? 1 : 0) +
+                    (visibleCols.has('loja') ? 1 : 0) +
+                    (visibleCols.has('sku') ? 1 : 0) +
+                    (visibleCols.has('produto') ? 1 : 0) +
+                    (visibleCols.has('unidadesEstoque') ? 1 : 0)
+                  }
+                >
                   Pág. {page}
                 </td>
-                {visibleCols.has('receita')           && <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.receita)}</td>}
-                {visibleCols.has('desconto')          && <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.desconto)}</td>}
-                {visibleCols.has('custoTotal')        && <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.custo)}</td>}
-                {visibleCols.has('taxaShopee')        && <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.taxa)}</td>}
-                {visibleCols.has('adsMarketing')      && <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.ads)}</td>}
-                {visibleCols.has('lucroOperacional')  && (
-                  <td className={`px-3 py-2.5 whitespace-nowrap ${pageTotais.lucro >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {visibleCols.has('receita') && (
+                  <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.receita)}</td>
+                )}
+                {visibleCols.has('desconto') && (
+                  <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.desconto)}</td>
+                )}
+                {visibleCols.has('custoTotal') && (
+                  <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.custo)}</td>
+                )}
+                {visibleCols.has('taxaShopee') && (
+                  <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.taxa)}</td>
+                )}
+                {visibleCols.has('adsMarketing') && (
+                  <td className="px-3 py-2.5 whitespace-nowrap">{fmt(pageTotais.ads)}</td>
+                )}
+                {visibleCols.has('lucroOperacional') && (
+                  <td
+                    className={`px-3 py-2.5 whitespace-nowrap ${pageTotais.lucro >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
+                  >
                     {fmt(pageTotais.lucro)}
                   </td>
                 )}
@@ -364,8 +511,14 @@ export function VendasTable({
       <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-700 flex-wrap gap-3">
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <span>Por página:</span>
-          <select className="select w-auto py-1 text-xs" value={pageSize}
-            onChange={(e) => { onPageSizeChange(Number(e.target.value)); onPageChange(1); }}>
+          <select
+            className="select w-auto py-1 text-xs"
+            value={pageSize}
+            onChange={(e) => {
+              onPageSizeChange(Number(e.target.value));
+              onPageChange(1);
+            }}
+          >
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
@@ -387,14 +540,19 @@ export function VendasTable({
             </button>
             {getPages(page, totalPages).map((pg, i) =>
               pg === '…' ? (
-                <span key={`e${i}`} className="px-1 text-slate-400 text-xs">…</span>
+                <span key={`e${i}`} className="px-1 text-slate-400 text-xs">
+                  …
+                </span>
               ) : (
-                <button key={pg} onClick={() => onPageChange(pg as number)}
+                <button
+                  key={pg}
+                  onClick={() => onPageChange(pg as number)}
                   className={`min-w-[28px] h-7 rounded-lg text-xs font-medium transition-colors ${
                     page === pg
                       ? 'bg-core-green text-white'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                  }`}>
+                  }`}
+                >
                   {pg}
                 </button>
               )

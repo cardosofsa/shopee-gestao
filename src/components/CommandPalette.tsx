@@ -1,28 +1,40 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  Search, ShoppingCart, Package, ArrowRight, X,
-  FileUp, Receipt, ShoppingBag, Lightbulb, Download,
-  Settings, RefreshCw, TrendingUp, Zap,
+  ArrowRight,
+  Download,
+  FileUp,
+  Lightbulb,
+  Package,
+  Receipt,
+  RefreshCw,
+  Search,
+  Settings,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingUp,
+  X,
+  Zap,
 } from 'lucide-react';
-import { useStore } from '../store';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { NAV_ITEMS } from '../navigation';
+import { useStore } from '../store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ResultKind = 'action' | 'page' | 'produto' | 'pedido';
 
 interface Result {
-  id:    string;
-  kind:  ResultKind;
+  id: string;
+  kind: ResultKind;
   label: string;
-  sub?:  string;
-  icon:  React.ElementType;
-  to:    string;
+  sub?: string;
+  icon: React.ElementType;
+  to: string;
 }
 
 interface Section {
-  key:   string;
+  key: string;
   title: string;
   items: Result[];
 }
@@ -30,14 +42,78 @@ interface Section {
 // ─── Quick actions ────────────────────────────────────────────────────────────
 
 const QUICK_ACTIONS: (Result & { keywords: string })[] = [
-  { id: 'a-importar',   kind: 'action', label: 'Importar pedidos',  sub: 'Carregar CSV ou XLSX',              icon: FileUp,     to: '/importar',   keywords: 'importar csv xlsx upload arquivo' },
-  { id: 'a-fechar-mes', kind: 'action', label: 'Fechar mês',        sub: 'Registrar resultado mensal',        icon: TrendingUp, to: '/financeiro', keywords: 'fechar mês histórico resultado pl financeiro' },
-  { id: 'a-despesa',    kind: 'action', label: 'Adicionar despesa', sub: 'Registrar custo operacional',       icon: Receipt,    to: '/despesas',   keywords: 'despesa custo gasto adicionar novo' },
-  { id: 'a-compra',     kind: 'action', label: 'Registrar compra',  sub: 'Entrada de estoque e CMV',          icon: ShoppingBag,to: '/compras',    keywords: 'compra entrada estoque cmv nota nf' },
-  { id: 'a-insights',   kind: 'action', label: 'Ver insights',      sub: 'Análise automática do negócio',     icon: Lightbulb,  to: '/insights',   keywords: 'insights análise automática alerta' },
-  { id: 'a-reposicao',  kind: 'action', label: 'Reposição urgente', sub: 'Produtos abaixo do estoque mínimo', icon: RefreshCw,  to: '/reposicao',  keywords: 'reposição estoque mínimo urgente baixo' },
-  { id: 'a-exportar',   kind: 'action', label: 'Exportar dados',    sub: 'Backup em XLSX',                    icon: Download,   to: '/exportar',   keywords: 'exportar backup xlsx download' },
-  { id: 'a-configs',    kind: 'action', label: 'Configurações',     sub: 'DAS, margem, empresa, lojas',       icon: Settings,   to: '/configs',    keywords: 'config configurações das alíquota empresa loja' },
+  {
+    id: 'a-importar',
+    kind: 'action',
+    label: 'Importar pedidos',
+    sub: 'Carregar CSV ou XLSX',
+    icon: FileUp,
+    to: '/importar',
+    keywords: 'importar csv xlsx upload arquivo',
+  },
+  {
+    id: 'a-fechar-mes',
+    kind: 'action',
+    label: 'Fechar mês',
+    sub: 'Registrar resultado mensal',
+    icon: TrendingUp,
+    to: '/financeiro',
+    keywords: 'fechar mês histórico resultado pl financeiro',
+  },
+  {
+    id: 'a-despesa',
+    kind: 'action',
+    label: 'Adicionar despesa',
+    sub: 'Registrar custo operacional',
+    icon: Receipt,
+    to: '/despesas',
+    keywords: 'despesa custo gasto adicionar novo',
+  },
+  {
+    id: 'a-compra',
+    kind: 'action',
+    label: 'Registrar compra',
+    sub: 'Entrada de estoque e CMV',
+    icon: ShoppingBag,
+    to: '/compras',
+    keywords: 'compra entrada estoque cmv nota nf',
+  },
+  {
+    id: 'a-insights',
+    kind: 'action',
+    label: 'Ver insights',
+    sub: 'Análise automática do negócio',
+    icon: Lightbulb,
+    to: '/insights',
+    keywords: 'insights análise automática alerta',
+  },
+  {
+    id: 'a-reposicao',
+    kind: 'action',
+    label: 'Reposição urgente',
+    sub: 'Produtos abaixo do estoque mínimo',
+    icon: RefreshCw,
+    to: '/reposicao',
+    keywords: 'reposição estoque mínimo urgente baixo',
+  },
+  {
+    id: 'a-exportar',
+    kind: 'action',
+    label: 'Exportar dados',
+    sub: 'Backup em XLSX',
+    icon: Download,
+    to: '/exportar',
+    keywords: 'exportar backup xlsx download',
+  },
+  {
+    id: 'a-configs',
+    kind: 'action',
+    label: 'Configurações',
+    sub: 'DAS, margem, empresa, lojas',
+    icon: Settings,
+    to: '/configs',
+    keywords: 'config configurações das alíquota empresa loja',
+  },
 ];
 
 // ─── Fuzzy score ──────────────────────────────────────────────────────────────
@@ -45,10 +121,10 @@ const QUICK_ACTIONS: (Result & { keywords: string })[] = [
 function score(text: string, query: string): number {
   const t = text.toLowerCase();
   const q = query.toLowerCase().trim();
-  if (!q)              return 1;
-  if (t === q)         return 100;
+  if (!q) return 1;
+  if (t === q) return 100;
   if (t.startsWith(q)) return 80;
-  if (t.includes(q))   return 60;
+  if (t.includes(q)) return 60;
   if (q.split(' ').every((w) => t.includes(w))) return 40;
   return 0;
 }
@@ -56,20 +132,33 @@ function score(text: string, query: string): number {
 // ─── Kind badge meta ──────────────────────────────────────────────────────────
 
 const KIND_BADGE: Record<ResultKind, { label: string; cls: string }> = {
-  action:  { label: 'ação',    cls: 'bg-core-green/10 text-core-green' },
-  page:    { label: 'página',  cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' },
-  produto: { label: 'produto', cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
-  pedido:  { label: 'pedido',  cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
+  action: { label: 'ação', cls: 'bg-core-green/10 text-core-green' },
+  page: {
+    label: 'página',
+    cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+  },
+  produto: {
+    label: 'produto',
+    cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+  },
+  pedido: {
+    label: 'pedido',
+    cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+  },
 };
 
 // ─── Row ─────────────────────────────────────────────────────────────────────
 
 function Row({
-  result, selected, onSelect,
+  result,
+  selected,
+  onSelect,
 }: {
-  result: Result; selected: boolean; onSelect: () => void;
+  result: Result;
+  selected: boolean;
+  onSelect: () => void;
 }) {
-  const Icon  = result.icon;
+  const Icon = result.icon;
   const badge = KIND_BADGE[result.kind];
   return (
     <button
@@ -80,13 +169,19 @@ function Row({
           : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
       }`}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-        selected ? 'bg-core-green text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-      }`}>
+      <div
+        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+          selected
+            ? 'bg-core-green text-white'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+        }`}
+      >
         <Icon size={14} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium truncate ${selected ? 'text-core-green' : 'text-slate-700 dark:text-slate-200'}`}>
+        <p
+          className={`text-sm font-medium truncate ${selected ? 'text-core-green' : 'text-slate-700 dark:text-slate-200'}`}
+        >
           {result.label}
         </p>
         {result.sub && (
@@ -108,7 +203,9 @@ function Row({
 function SectionHeader({ title, count }: { title: string; count: number }) {
   return (
     <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{title}</span>
+      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+        {title}
+      </span>
       <span className="text-[10px] text-slate-300 dark:text-slate-600">{count}</span>
     </div>
   );
@@ -117,35 +214,41 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
 // ─── Command Palette ──────────────────────────────────────────────────────────
 
 export function CommandPalette({ onClose }: { onClose: () => void }) {
-  const navigate    = useNavigate();
-  const pedidosAll  = useStore((s) => s.pedidos);
+  const navigate = useNavigate();
+  const pedidosAll = useStore((s) => s.pedidos);
   const produtosAll = useStore((s) => s.produtos);
 
-  const [query,    setQuery]    = useState('');
+  const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   // ── Build sections ─────────────────────────────────────────────────────────
   const sections = useMemo<Section[]>(() => {
     const q = query.trim();
 
-    const actions: Result[] = QUICK_ACTIONS
-      .map((a) => ({
-        s: Math.max(score(a.label, q), score(a.keywords, q)),
-        r: { id: a.id, kind: a.kind, label: a.label, sub: a.sub, icon: a.icon, to: a.to } as Result,
-      }))
+    const actions: Result[] = QUICK_ACTIONS.map((a) => ({
+      s: Math.max(score(a.label, q), score(a.keywords, q)),
+      r: { id: a.id, kind: a.kind, label: a.label, sub: a.sub, icon: a.icon, to: a.to } as Result,
+    }))
       .filter(({ s }) => !q || s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, 4)
       .map(({ r }) => r);
 
-    const pages: Result[] = NAV_ITEMS
-      .map((p) => ({
-        s: Math.max(score(p.label, q), score(p.keywords ?? '', q)),
-        r: { id: `page-${p.to}`, kind: 'page' as ResultKind, label: p.label, icon: p.icon, to: p.to } as Result,
-      }))
+    const pages: Result[] = NAV_ITEMS.map((p) => ({
+      s: Math.max(score(p.label, q), score(p.keywords ?? '', q)),
+      r: {
+        id: `page-${p.to}`,
+        kind: 'page' as ResultKind,
+        label: p.label,
+        icon: p.icon,
+        to: p.to,
+      } as Result,
+    }))
       .filter(({ s }) => !q || s > 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, q ? 5 : 8)
@@ -154,7 +257,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     if (!q) {
       const out: Section[] = [];
       if (actions.length) out.push({ key: 'actions', title: 'Ações rápidas', items: actions });
-      if (pages.length)   out.push({ key: 'pages',   title: 'Páginas',       items: pages });
+      if (pages.length) out.push({ key: 'pages', title: 'Páginas', items: pages });
       return out;
     }
 
@@ -162,44 +265,65 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       .filter((p) => `${p.sku} ${p.nome}`.toLowerCase().includes(q.toLowerCase()))
       .slice(0, 4)
       .map((p) => ({
-        id: `prod-${p.sku}`, kind: 'produto' as ResultKind,
-        label: p.nome, sub: `SKU: ${p.sku} · Estoque: ${p.estoqueAtual}`,
-        icon: Package, to: `/estoque/${p.sku}`,
+        id: `prod-${p.sku}`,
+        kind: 'produto' as ResultKind,
+        label: p.nome,
+        sub: `SKU: ${p.sku} · Estoque: ${p.estoqueAtual}`,
+        icon: Package,
+        to: `/estoque/${p.sku}`,
       }));
 
     const peds: Result[] = pedidosAll
       .filter((p) => p.numeroPedido.toLowerCase().includes(q.toLowerCase()))
       .slice(0, 3)
       .map((p) => ({
-        id: `ped-${p.id}`, kind: 'pedido' as ResultKind,
-        label: p.numeroPedido, sub: `${p.produto} · ${p.data} · ${p.status}`,
-        icon: ShoppingCart, to: '/vendas',
+        id: `ped-${p.id}`,
+        kind: 'pedido' as ResultKind,
+        label: p.numeroPedido,
+        sub: `${p.produto} · ${p.data} · ${p.status}`,
+        icon: ShoppingCart,
+        to: '/vendas',
       }));
 
     const out: Section[] = [];
-    if (actions.length) out.push({ key: 'actions', title: 'Ações',    items: actions });
-    if (pages.length)   out.push({ key: 'pages',   title: 'Páginas',  items: pages });
-    if (prods.length)   out.push({ key: 'prods',   title: 'Produtos', items: prods });
-    if (peds.length)    out.push({ key: 'peds',    title: 'Pedidos',  items: peds });
+    if (actions.length) out.push({ key: 'actions', title: 'Ações', items: actions });
+    if (pages.length) out.push({ key: 'pages', title: 'Páginas', items: pages });
+    if (prods.length) out.push({ key: 'prods', title: 'Produtos', items: prods });
+    if (peds.length) out.push({ key: 'peds', title: 'Pedidos', items: peds });
     return out;
   }, [query, produtosAll, pedidosAll]);
 
   // Flat for keyboard navigation
   const flat = useMemo(() => sections.flatMap((s) => s.items), [sections]);
 
-  useEffect(() => { setSelected(0); }, [flat]);
+  useEffect(() => {
+    setSelected(0);
+  }, [flat]);
 
-  const go = useCallback((r: Result) => {
-    navigate(r.to);
-    onClose();
-  }, [navigate, onClose]);
+  const go = useCallback(
+    (r: Result) => {
+      navigate(r.to);
+      onClose();
+    },
+    [navigate, onClose]
+  );
 
-  const handleKey = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSelected((i) => Math.min(i + 1, flat.length - 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setSelected((i) => Math.max(i - 1, 0)); }
-    else if (e.key === 'Enter') { if (flat[selected]) go(flat[selected]); }
-    else if (e.key === 'Escape') { onClose(); }
-  }, [flat, selected, go, onClose]);
+  const handleKey = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelected((i) => Math.min(i + 1, flat.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelected((i) => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        if (flat[selected]) go(flat[selected]);
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    },
+    [flat, selected, go, onClose]
+  );
 
   // Track global index across sections while rendering
   let globalIdx = 0;
@@ -207,14 +331,15 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-start justify-center pt-[12vh] px-4"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Panel */}
       <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-
         {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
           <Search size={16} className="text-slate-400 flex-shrink-0" />
@@ -228,7 +353,10 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             className="flex-1 bg-transparent text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <button
+              onClick={() => setQuery('')}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            >
               <X size={14} />
             </button>
           )}
@@ -255,7 +383,10 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
                       key={r.id}
                       result={r}
                       selected={idx === selected}
-                      onSelect={() => { setSelected(idx); go(r); }}
+                      onSelect={() => {
+                        setSelected(idx);
+                        go(r);
+                      }}
                     />
                   );
                 })}
@@ -267,15 +398,21 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         {/* Footer */}
         <div className="flex items-center gap-4 px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
           <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">↑↓</kbd>
+            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">
+              ↑↓
+            </kbd>
             navegar
           </span>
           <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">↵</kbd>
+            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">
+              ↵
+            </kbd>
             abrir
           </span>
           <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">ESC</kbd>
+            <kbd className="px-1 py-0.5 border border-slate-200 dark:border-slate-700 rounded text-[9px]">
+              ESC
+            </kbd>
             fechar
           </span>
           {flat.length > 0 && (

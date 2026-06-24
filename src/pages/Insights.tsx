@@ -1,19 +1,32 @@
-import { useMemo, useState, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, CheckCircle, Lightbulb,
-  TrendingUp, BarChart2, Package, Megaphone, ShoppingBag, Target, RefreshCw,
+  AlertCircle,
+  AlertTriangle,
+  BarChart2,
+  CheckCircle,
+  Lightbulb,
+  Megaphone,
+  Package,
+  RefreshCw,
+  ShoppingBag,
+  Target,
+  TrendingUp,
 } from 'lucide-react';
-import { useStore } from '../store';
+import { useEffect, useMemo, useState } from 'react';
+
 import { useHeavyCalc } from '../hooks/useHeavyCalc';
+import { useStore } from '../store';
 import type { Insight, InsightCategoria, InsightTipo } from '../utils/insights';
 
-const TIPO_META: Record<InsightTipo, {
-  label: string;
-  icon: React.ReactNode;
-  border: string;
-  badge: string;
-  text: string;
-}> = {
+const TIPO_META: Record<
+  InsightTipo,
+  {
+    label: string;
+    icon: React.ReactNode;
+    border: string;
+    badge: string;
+    text: string;
+  }
+> = {
   critico: {
     label: 'Crítico',
     icon: <AlertCircle className="w-5 h-5 text-red-500" />,
@@ -38,18 +51,23 @@ const TIPO_META: Record<InsightTipo, {
 };
 
 const CAT_ICON: Record<InsightCategoria, React.ReactNode> = {
-  receita:  <TrendingUp  className="w-3.5 h-3.5" />,
-  margem:   <BarChart2   className="w-3.5 h-3.5" />,
-  estoque:  <Package     className="w-3.5 h-3.5" />,
-  ads:      <Megaphone   className="w-3.5 h-3.5" />,
+  receita: <TrendingUp className="w-3.5 h-3.5" />,
+  margem: <BarChart2 className="w-3.5 h-3.5" />,
+  estoque: <Package className="w-3.5 h-3.5" />,
+  ads: <Megaphone className="w-3.5 h-3.5" />,
   produtos: <ShoppingBag className="w-3.5 h-3.5" />,
-  metas:    <Target      className="w-3.5 h-3.5" />,
-  giro:     <RefreshCw   className="w-3.5 h-3.5" />,
+  metas: <Target className="w-3.5 h-3.5" />,
+  giro: <RefreshCw className="w-3.5 h-3.5" />,
 };
 
 const CAT_LABEL: Record<InsightCategoria, string> = {
-  receita: 'Receita', margem: 'Margem', estoque: 'Estoque',
-  ads: 'Ads', produtos: 'Produtos', metas: 'Metas', giro: 'Giro',
+  receita: 'Receita',
+  margem: 'Margem',
+  estoque: 'Estoque',
+  ads: 'Ads',
+  produtos: 'Produtos',
+  metas: 'Metas',
+  giro: 'Giro',
 };
 
 const TIPO_ORDER: InsightTipo[] = ['critico', 'atencao', 'positivo'];
@@ -57,20 +75,26 @@ const TIPO_ORDER: InsightTipo[] = ['critico', 'atencao', 'positivo'];
 function InsightCard({ insight }: { insight: Insight }) {
   const m = TIPO_META[insight.tipo];
   return (
-    <div className={`flex gap-4 p-4 rounded-xl border-l-4 ${m.border} bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700`}>
+    <div
+      className={`flex gap-4 p-4 rounded-xl border-l-4 ${m.border} bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700`}
+    >
       <div className="flex-shrink-0 mt-0.5">{m.icon}</div>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${m.badge}`}>
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${m.badge}`}
+          >
             {CAT_ICON[insight.categoria]}
             {CAT_LABEL[insight.categoria]}
           </span>
-          {insight.valor && (
-            <span className={`text-sm font-bold ${m.text}`}>{insight.valor}</span>
-          )}
+          {insight.valor && <span className={`text-sm font-bold ${m.text}`}>{insight.valor}</span>}
         </div>
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{insight.titulo}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{insight.descricao}</p>
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">
+          {insight.titulo}
+        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+          {insight.descricao}
+        </p>
         {insight.diagnostico && (
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-700 pt-2">
             <span className="font-semibold text-slate-600 dark:text-slate-300">Por quê: </span>
@@ -95,27 +119,33 @@ function Section({ tipo, insights }: { tipo: InsightTipo; insights: Insight[] })
         </span>
       </div>
       <div className="flex flex-col gap-3">
-        {insights.map(i => <InsightCard key={i.id} insight={i} />)}
+        {insights.map((i) => (
+          <InsightCard key={i.id} insight={i} />
+        ))}
       </div>
     </section>
   );
 }
 
 export default function Insights() {
-  const pedidos       = useStore(s => s.pedidos);
-  const historico     = useStore(s => s.historico);
-  const produtos      = useStore(s => s.produtos);
-  const configuracoes = useStore(s => s.configuracoes);
-  const [mesAtual]    = useState(() => new Date().toISOString().slice(0, 7));
+  const pedidos = useStore((s) => s.pedidos);
+  const historico = useStore((s) => s.historico);
+  const produtos = useStore((s) => s.produtos);
+  const configuracoes = useStore((s) => s.configuracoes);
+  const [mesAtual] = useState(() => new Date().toISOString().slice(0, 7));
   const [insights, setInsights] = useState<Insight[]>([]);
   const { computeInsights } = useHeavyCalc();
 
   useEffect(() => {
     let cancelled = false;
     computeInsights({ pedidos, historico, produtos, configuracoes, mesAtual })
-      .then((result) => { if (!cancelled) setInsights(result); })
+      .then((result) => {
+        if (!cancelled) setInsights(result);
+      })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pedidos, historico, produtos, configuracoes, mesAtual, computeInsights]);
 
   const byTipo = useMemo(() => {
@@ -133,7 +163,9 @@ export default function Insights() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Lightbulb className="w-5 h-5 text-slate-500" />
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Insights Automáticos</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            Insights Automáticos
+          </h1>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {insights.length === 0
@@ -146,11 +178,13 @@ export default function Insights() {
         <div className="text-center py-16">
           <CheckCircle className="w-12 h-12 mx-auto mb-3 text-emerald-300" />
           <p className="font-medium text-slate-600 dark:text-slate-300">Tudo em ordem!</p>
-          <p className="text-sm text-slate-400 mt-1">Nenhum desvio ou oportunidade identificada com os dados atuais.</p>
+          <p className="text-sm text-slate-400 mt-1">
+            Nenhum desvio ou oportunidade identificada com os dados atuais.
+          </p>
         </div>
       ) : (
         <div className="space-y-8">
-          {TIPO_ORDER.map(tipo => (
+          {TIPO_ORDER.map((tipo) => (
             <Section key={tipo} tipo={tipo} insights={byTipo[tipo]} />
           ))}
         </div>

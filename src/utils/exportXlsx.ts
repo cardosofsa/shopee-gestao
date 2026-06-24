@@ -12,14 +12,11 @@ export function exportXlsx(filename: string, sheets: SheetDef[]) {
 
   for (const sheet of sheets) {
     const data = [sheet.headers, ...sheet.rows];
-    const ws   = XLSX.utils.aoa_to_sheet(data);
+    const ws = XLSX.utils.aoa_to_sheet(data);
 
     // Auto-largura das colunas
     const colWidths = sheet.headers.map((h, ci) => {
-      const maxLen = Math.max(
-        h.length,
-        ...sheet.rows.map((r) => String(r[ci] ?? '').length),
-      );
+      const maxLen = Math.max(h.length, ...sheet.rows.map((r) => String(r[ci] ?? '').length));
       return { wch: Math.min(maxLen + 2, 40) };
     });
     ws['!cols'] = colWidths;

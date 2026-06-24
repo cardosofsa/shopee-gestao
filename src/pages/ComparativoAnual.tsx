@@ -1,13 +1,27 @@
-import { useState, useMemo } from 'react';
+import {
+  Award,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CalendarRange, TrendingUp, TrendingDown, Minus,
-  Award, ChevronLeft, ChevronRight,
-} from 'lucide-react';
-import {
-  ResponsiveContainer, ComposedChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, AreaChart, Area,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+
 import { useStore } from '../store';
 import { fmt, getKPIsMes } from '../utils/calculations';
 import { C } from '../utils/chartColors';
@@ -16,18 +30,34 @@ import { C } from '../utils/chartColors';
 
 type Metric = 'receita' | 'pedidos' | 'lucro' | 'margem';
 
-const METRIC_CFG: Record<Metric, {
-  label: string;
-  fmt: (v: number) => string;
-  fromKPI: (k: ReturnType<typeof getKPIsMes>) => number;
-}> = {
-  receita:  { label: 'Receita',   fmt: (v) => fmt(v),                       fromKPI: (k) => k.faturamento },
-  pedidos:  { label: 'Pedidos',   fmt: (v) => String(Math.round(v)),         fromKPI: (k) => k.pedidosMes  },
-  lucro:    { label: 'Lucro Op.', fmt: (v) => fmt(v),                       fromKPI: (k) => k.lucroOp     },
-  margem:   { label: 'Margem %',  fmt: (v) => `${v.toFixed(1)}%`,            fromKPI: (k) => k.margem      },
+const METRIC_CFG: Record<
+  Metric,
+  {
+    label: string;
+    fmt: (v: number) => string;
+    fromKPI: (k: ReturnType<typeof getKPIsMes>) => number;
+  }
+> = {
+  receita: { label: 'Receita', fmt: (v) => fmt(v), fromKPI: (k) => k.faturamento },
+  pedidos: { label: 'Pedidos', fmt: (v) => String(Math.round(v)), fromKPI: (k) => k.pedidosMes },
+  lucro: { label: 'Lucro Op.', fmt: (v) => fmt(v), fromKPI: (k) => k.lucroOp },
+  margem: { label: 'Margem %', fmt: (v) => `${v.toFixed(1)}%`, fromKPI: (k) => k.margem },
 };
 
-const MESES_LABEL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_LABEL = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
+];
 
 const YEAR_COLORS = [C.primary, '#6366f1', C.amber, C.red];
 
@@ -43,13 +73,15 @@ function growthPct(a: number, b: number) {
 }
 
 function GrowthBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="text-[10px] text-slate-300 dark:text-slate-600">—</span>;
+  if (pct === null)
+    return <span className="text-[10px] text-slate-300 dark:text-slate-600">—</span>;
   const Icon = pct > 0 ? TrendingUp : pct < 0 ? TrendingDown : Minus;
-  const cls  = pct > 0 ? 'text-emerald-600' : pct < 0 ? 'text-red-500' : 'text-slate-400';
+  const cls = pct > 0 ? 'text-emerald-600' : pct < 0 ? 'text-red-500' : 'text-slate-400';
   return (
     <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${cls}`}>
       <Icon size={9} />
-      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+      {pct > 0 ? '+' : ''}
+      {pct.toFixed(1)}%
     </span>
   );
 }
@@ -78,7 +110,7 @@ function CustomTooltip({ active, payload, label, metric }: any) {
 
 export default function ComparativoAnual() {
   const pedidosAll = useStore((s) => s.pedidos);
-  const historico  = useStore((s) => s.historico);
+  const historico = useStore((s) => s.historico);
 
   const currentYear = new Date().getFullYear();
 
@@ -91,7 +123,7 @@ export default function ComparativoAnual() {
     return Array.from(ys).sort((a, b) => b - a);
   }, [pedidosAll, historico, currentYear]);
 
-  const [metric,  setMetric]  = useState<Metric>('receita');
+  const [metric, setMetric] = useState<Metric>('receita');
   const [baseYear, setBaseYear] = useState(currentYear);
   const [cmpYears, setCmpYears] = useState<number[]>(() => {
     const prev = currentYear - 1;
@@ -120,8 +152,8 @@ export default function ComparativoAnual() {
         if (hist) {
           if (metric === 'receita') return hist.faturamentoBruto;
           if (metric === 'pedidos') return hist.pedidosQtd;
-          if (metric === 'lucro')   return hist.lucroOperacional;
-          if (metric === 'margem')  return hist.margemPercentual;
+          if (metric === 'lucro') return hist.lucroOperacional;
+          if (metric === 'margem') return hist.margemPercentual;
         }
         const kpi = getKPIsMes(pedidosAll, mk);
         return cfg.fromKPI(kpi);
@@ -148,7 +180,10 @@ export default function ComparativoAnual() {
     const cumulative: Record<number, number[]> = {};
     displayYears.forEach((yr) => {
       let acc = 0;
-      cumulative[yr] = (yearData[yr] ?? []).map((v) => { acc += v; return acc; });
+      cumulative[yr] = (yearData[yr] ?? []).map((v) => {
+        acc += v;
+        return acc;
+      });
     });
 
     return Array.from({ length: 12 }, (_, mi) => {
@@ -201,7 +236,6 @@ export default function ComparativoAnual() {
 
   return (
     <div className="flex-1 p-6 space-y-6">
-
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -209,19 +243,24 @@ export default function ComparativoAnual() {
             <CalendarRange size={18} className="text-core-green" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Comparativo Ano a Ano</h1>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Evolução histórica mês a mês entre anos</p>
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+              Comparativo Ano a Ano
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Evolução histórica mês a mês entre anos
+            </p>
           </div>
         </div>
-        <Link to="/previsao" className="text-xs text-core-green hover:underline">Ver Previsão de Vendas →</Link>
+        <Link to="/previsao" className="text-xs text-core-green hover:underline">
+          Ver Previsão de Vendas →
+        </Link>
       </div>
 
       {/* Controls */}
       <div className="flex items-start gap-4 flex-wrap">
-
         {/* Metric tabs */}
         <div className="flex items-center gap-1 card px-1 py-1">
-          {(Object.entries(METRIC_CFG) as [Metric, typeof METRIC_CFG[Metric]][]).map(([k, c]) => (
+          {(Object.entries(METRIC_CFG) as [Metric, (typeof METRIC_CFG)[Metric]][]).map(([k, c]) => (
             <button
               key={k}
               onClick={() => setMetric(k)}
@@ -246,7 +285,9 @@ export default function ComparativoAnual() {
             >
               <ChevronLeft size={14} />
             </button>
-            <span className="text-sm font-bold text-core-green px-1 min-w-12 text-center">{baseYear}</span>
+            <span className="text-sm font-bold text-core-green px-1 min-w-12 text-center">
+              {baseYear}
+            </span>
             <button
               onClick={() => setBaseYear((y) => y + 1)}
               disabled={baseYear >= currentYear}
@@ -257,20 +298,26 @@ export default function ComparativoAnual() {
           </div>
           <span className="text-xs text-slate-400">vs</span>
           <div className="flex items-center gap-1 flex-wrap">
-            {availableYears.filter((y) => y !== baseYear).map((y) => (
-              <button
-                key={y}
-                onClick={() => toggleCmpYear(y)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${
-                  cmpYears.includes(y)
-                    ? 'text-white border-transparent'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-core-green/50'
-                }`}
-                style={cmpYears.includes(y) ? { background: YEAR_COLORS[(cmpYears.indexOf(y) + 1) % YEAR_COLORS.length] } : {}}
-              >
-                {y}
-              </button>
-            ))}
+            {availableYears
+              .filter((y) => y !== baseYear)
+              .map((y) => (
+                <button
+                  key={y}
+                  onClick={() => toggleCmpYear(y)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${
+                    cmpYears.includes(y)
+                      ? 'text-white border-transparent'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-core-green/50'
+                  }`}
+                  style={
+                    cmpYears.includes(y)
+                      ? { background: YEAR_COLORS[(cmpYears.indexOf(y) + 1) % YEAR_COLORS.length] }
+                      : {}
+                  }
+                >
+                  {y}
+                </button>
+              ))}
           </div>
         </div>
       </div>
@@ -314,9 +361,11 @@ export default function ComparativoAnual() {
               tick={{ fontSize: 9, fill: C.slate }}
               width={metric === 'pedidos' || metric === 'margem' ? 32 : 56}
               tickFormatter={
-                metric === 'pedidos' ? (v) => String(v)
-                : metric === 'margem' ? (v) => `${v.toFixed(0)}%`
-                : (v) => `${(v / 1000).toFixed(0)}k`
+                metric === 'pedidos'
+                  ? (v) => String(v)
+                  : metric === 'margem'
+                    ? (v) => `${v.toFixed(0)}%`
+                    : (v) => `${(v / 1000).toFixed(0)}k`
               }
             />
             <Tooltip content={<CustomTooltip metric={metric} />} />
@@ -353,9 +402,11 @@ export default function ComparativoAnual() {
               tick={{ fontSize: 9, fill: C.slate }}
               width={metric === 'pedidos' || metric === 'margem' ? 32 : 56}
               tickFormatter={
-                metric === 'pedidos' ? (v) => String(v)
-                : metric === 'margem' ? (v) => `${v.toFixed(0)}%`
-                : (v) => `${(v / 1000).toFixed(0)}k`
+                metric === 'pedidos'
+                  ? (v) => String(v)
+                  : metric === 'margem'
+                    ? (v) => `${v.toFixed(0)}%`
+                    : (v) => `${(v / 1000).toFixed(0)}k`
               }
             />
             <Tooltip content={<CustomTooltip metric={metric} />} />
@@ -396,10 +447,18 @@ export default function ComparativoAnual() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
-                  <th className="text-left px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">Mês</th>
-                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">{baseYear}</th>
-                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">{compareYear}</th>
-                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">Δ%</th>
+                  <th className="text-left px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">
+                    Mês
+                  </th>
+                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">
+                    {baseYear}
+                  </th>
+                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">
+                    {compareYear}
+                  </th>
+                  <th className="text-right px-4 py-2 font-semibold text-slate-500 dark:text-slate-400">
+                    Δ%
+                  </th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -408,8 +467,13 @@ export default function ComparativoAnual() {
                   const up = r.growth != null ? r.growth > 0 : null;
                   const barW = r.growth != null ? Math.min(100, Math.abs(r.growth)) : 0;
                   return (
-                    <tr key={r.mes} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <td className="px-4 py-2 font-medium text-slate-700 dark:text-slate-200">{r.mes}</td>
+                    <tr
+                      key={r.mes}
+                      className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    >
+                      <td className="px-4 py-2 font-medium text-slate-700 dark:text-slate-200">
+                        {r.mes}
+                      </td>
                       <td className="px-4 py-2 text-right font-semibold tabular-nums text-slate-700 dark:text-slate-200">
                         {cfg.fmt(r.curr)}
                       </td>
@@ -441,7 +505,12 @@ export default function ComparativoAnual() {
                     {cfg.fmt(annualTotals.find((a) => a.year === compareYear)?.total ?? 0)}
                   </td>
                   <td className="px-4 py-2 text-right" colSpan={2}>
-                    <GrowthBadge pct={growthPct(annualTotals[0]?.total ?? 0, annualTotals.find((a) => a.year === compareYear)?.total ?? 0)} />
+                    <GrowthBadge
+                      pct={growthPct(
+                        annualTotals[0]?.total ?? 0,
+                        annualTotals.find((a) => a.year === compareYear)?.total ?? 0
+                      )}
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -461,16 +530,25 @@ export default function ComparativoAnual() {
             <div
               key={b.year}
               className="rounded-xl p-3 text-center"
-              style={{ background: `${YEAR_COLORS[i % YEAR_COLORS.length]}15`, border: `1px solid ${YEAR_COLORS[i % YEAR_COLORS.length]}30` }}
+              style={{
+                background: `${YEAR_COLORS[i % YEAR_COLORS.length]}15`,
+                border: `1px solid ${YEAR_COLORS[i % YEAR_COLORS.length]}30`,
+              }}
             >
-              <p className="text-xs font-semibold" style={{ color: YEAR_COLORS[i % YEAR_COLORS.length] }}>{b.year}</p>
-              <p className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1">{b.month}</p>
+              <p
+                className="text-xs font-semibold"
+                style={{ color: YEAR_COLORS[i % YEAR_COLORS.length] }}
+              >
+                {b.year}
+              </p>
+              <p className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1">
+                {b.month}
+              </p>
               <p className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{cfg.fmt(b.value)}</p>
             </div>
           ))}
         </div>
       </div>
-
     </div>
   );
 }

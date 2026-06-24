@@ -1,4 +1,4 @@
-import type { Pedido, Produto, HistoricoMensal, Configuracoes } from '../types';
+import type { Configuracoes, HistoricoMensal, Pedido, Produto } from '../types';
 import { fmt } from './calculations';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ function margemPorSku(pedidos: Pedido[], mes: string): Map<string, number> {
   }
   const result = new Map<string, number>();
   for (const [sku, rec] of recMap) {
-    result.set(sku, rec > 0 ? (lucMap.get(sku) ?? 0) / rec * 100 : 0);
+    result.set(sku, rec > 0 ? ((lucMap.get(sku) ?? 0) / rec) * 100 : 0);
   }
   return result;
 }
@@ -107,13 +107,14 @@ function produtosParados(pedidos: Pedido[], produtos: Produto[]): Produto[] {
     if (p.data >= limStr && (p.status === 'Concluído' || p.status === 'Enviado'))
       skusRecentes.add(p.sku);
   }
-  const skusComHistorico = new Set(pedidos.map(p => p.sku));
+  const skusComHistorico = new Set(pedidos.map((p) => p.sku));
 
-  return produtos.filter(p =>
-    p.ativo !== false &&
-    p.estoqueAtual > 0 &&
-    skusComHistorico.has(p.sku) &&
-    !skusRecentes.has(p.sku),
+  return produtos.filter(
+    (p) =>
+      p.ativo !== false &&
+      p.estoqueAtual > 0 &&
+      skusComHistorico.has(p.sku) &&
+      !skusRecentes.has(p.sku)
   );
 }
 
@@ -130,36 +131,40 @@ export function generateAnaliseGestorOp(params: {
 }): AnaliseGestorOp {
   const { dre, dreAnt, produtos, pedidos, configuracoes, mes } = params;
 
-  const pontosFortes:  PontoForte[]  = [];
+  const pontosFortes: PontoForte[] = [];
   const pontosAtencao: PontoAtencao[] = [];
   const recomendacoes: Recomendacao[] = [];
   let seq = 0;
   // Inclui o mês no ID para que dismiss de um mês não afete outro mês
   const uid = (prefix: string) => `${mes}__${prefix}-${++seq}`;
 
-  const produtosAtivos = produtos.filter(p => p.ativo !== false);
-  const velDia         = velocidadePorSku(pedidos);
-  const recSku         = receitaPorSku(pedidos, mes);
-  const margemSku      = margemPorSku(pedidos, mes);
+  const produtosAtivos = produtos.filter((p) => p.ativo !== false);
+  const velDia = velocidadePorSku(pedidos);
+  const recSku = receitaPorSku(pedidos, mes);
+  const margemSku = margemPorSku(pedidos, mes);
 
   // ACOS do mês atual (pedidos live)
-  const acosAtual = dre.receitaBruta > 0 ? dre.ads / dre.receitaBruta * 100 : 0;
-  const acosAnt   = dreAnt.receitaBruta > 0 ? dreAnt.ads / dreAnt.receitaBruta * 100 : 0;
+  const acosAtual = dre.receitaBruta > 0 ? (dre.ads / dre.receitaBruta) * 100 : 0;
+  const acosAnt = dreAnt.receitaBruta > 0 ? (dreAnt.ads / dreAnt.receitaBruta) * 100 : 0;
 
   // Ticket médio
-  const ticket    = dre.pedidosQtd > 0 ? dre.receitaBruta / dre.pedidosQtd : 0;
+  const ticket = dre.pedidosQtd > 0 ? dre.receitaBruta / dre.pedidosQtd : 0;
   const ticketAnt = dreAnt.pedidosQtd > 0 ? dreAnt.receitaBruta / dreAnt.pedidosQtd : 0;
 
   // Variação receita
-  const dRecPct = dreAnt.receitaBruta > 0
-    ? (dre.receitaBruta - dreAnt.receitaBruta) / dreAnt.receitaBruta * 100 : 0;
+  const dRecPct =
+    dreAnt.receitaBruta > 0
+      ? ((dre.receitaBruta - dreAnt.receitaBruta) / dreAnt.receitaBruta) * 100
+      : 0;
 
   // Variação margem (pp)
   const dMargem = dre.margem - dreAnt.margem;
 
   // Variação resultado
-  const dResulPct = dreAnt.resultado !== 0
-    ? (dre.resultado - dreAnt.resultado) / Math.abs(dreAnt.resultado) * 100 : 0;
+  const dResulPct =
+    dreAnt.resultado !== 0
+      ? ((dre.resultado - dreAnt.resultado) / Math.abs(dreAnt.resultado)) * 100
+      : 0;
 
   // ── PONTOS FORTES ───────────────────────────────────────────────────────────
 
@@ -203,7 +208,7 @@ export function generateAnaliseGestorOp(params: {
     });
   }
 
-  const despPct = dre.receitaBruta > 0 ? dre.despesasTotal / dre.receitaBruta * 100 : 0;
+  const despPct = dre.receitaBruta > 0 ? (dre.despesasTotal / dre.receitaBruta) * 100 : 0;
   if (dre.receitaBruta > 0 && despPct < 15 && dre.despesasTotal > 0) {
     pontosFortes.push({
       id: uid('pf-desp'),
@@ -214,7 +219,7 @@ export function generateAnaliseGestorOp(params: {
 
   // Meta de lucro
   if (configuracoes.metaLucro && dre.resultado >= configuracoes.metaLucro) {
-    const prog = dre.resultado / configuracoes.metaLucro * 100;
+    const prog = (dre.resultado / configuracoes.metaLucro) * 100;
     pontosFortes.push({
       id: uid('pf-meta'),
       texto: `Meta de lucro atingida: ${fmt(dre.resultado)} (${prog.toFixed(0)}% da meta)`,
@@ -224,7 +229,7 @@ export function generateAnaliseGestorOp(params: {
 
   // Ticket médio subindo
   if (ticketAnt > 0 && ticket > 0) {
-    const dTicket = (ticket - ticketAnt) / ticketAnt * 100;
+    const dTicket = ((ticket - ticketAnt) / ticketAnt) * 100;
     if (dTicket >= 5) {
       pontosFortes.push({
         id: uid('pf-ticket'),
@@ -268,7 +273,7 @@ export function generateAnaliseGestorOp(params: {
     });
   }
 
-  const cmvPct = dre.receitaBruta > 0 ? dre.cmv / dre.receitaBruta * 100 : 0;
+  const cmvPct = dre.receitaBruta > 0 ? (dre.cmv / dre.receitaBruta) * 100 : 0;
   if (cmvPct > 65) {
     pontosAtencao.push({
       id: uid('pa-cmv'),
@@ -295,7 +300,7 @@ export function generateAnaliseGestorOp(params: {
 
   // Meta faturamento não atingida
   if (configuracoes.metaFaturamento && dre.receitaBruta > 0) {
-    const prog = dre.receitaBruta / configuracoes.metaFaturamento * 100;
+    const prog = (dre.receitaBruta / configuracoes.metaFaturamento) * 100;
     if (prog < 90) {
       pontosAtencao.push({
         id: uid('pa-meta'),
@@ -308,28 +313,33 @@ export function generateAnaliseGestorOp(params: {
   // ── RECOMENDAÇÕES ───────────────────────────────────────────────────────────
 
   // R1: Ruptura iminente
-  interface RupturaInfo { nome: string; sku: string; dias: number; receitaSemana: number }
+  interface RupturaInfo {
+    nome: string;
+    sku: string;
+    dias: number;
+    receitaSemana: number;
+  }
   const rupturas: RupturaInfo[] = [];
   for (const prod of produtosAtivos) {
     const vel = velDia.get(prod.sku) ?? 0;
     if (vel > 0 && prod.estoqueAtual > 0) {
       const dias = prod.estoqueAtual / vel;
       if (dias < 7) {
-        const receitaSemana = (recSku.get(prod.sku) ?? 0) / 30 * 7;
+        const receitaSemana = ((recSku.get(prod.sku) ?? 0) / 30) * 7;
         rupturas.push({ nome: prod.nome, sku: prod.sku, dias: Math.ceil(dias), receitaSemana });
       }
     } else if (prod.estoqueAtual === 0 && vel > 0) {
       // Já zerado
-      const receitaSemana = (recSku.get(prod.sku) ?? 0) / 30 * 7;
+      const receitaSemana = ((recSku.get(prod.sku) ?? 0) / 30) * 7;
       rupturas.push({ nome: prod.nome, sku: prod.sku, dias: 0, receitaSemana });
     }
   }
   rupturas.sort((a, b) => a.dias - b.dias);
 
   if (rupturas.length > 0) {
-    const top  = rupturas[0];
-    const vel  = velDia.get(top.sku) ?? 0;
-    const prod = produtosAtivos.find(p => p.sku === top.sku);
+    const top = rupturas[0];
+    const vel = velDia.get(top.sku) ?? 0;
+    const prod = produtosAtivos.find((p) => p.sku === top.sku);
 
     let acao: string;
     if (rupturas.length > 1) {
@@ -340,9 +350,10 @@ export function generateAnaliseGestorOp(params: {
       acao = `Reponha "${top.nome.slice(0, 40)}" esta semana — ruptura em ~${top.dias} dia(s)`;
     }
 
-    const racional = top.dias === 0
-      ? `Estoque zerado. Velocidade de venda: ${vel.toFixed(1)} un/dia. Receita em risco: ${fmt(top.receitaSemana)}/semana.`
-      : `Estoque: ${prod?.estoqueAtual ?? 0} un. Velocidade: ${vel.toFixed(1)} un/dia. Ruptura estimada em ~${top.dias} dia(s). Receita em risco: ${fmt(top.receitaSemana)}/semana.`;
+    const racional =
+      top.dias === 0
+        ? `Estoque zerado. Velocidade de venda: ${vel.toFixed(1)} un/dia. Receita em risco: ${fmt(top.receitaSemana)}/semana.`
+        : `Estoque: ${prod?.estoqueAtual ?? 0} un. Velocidade: ${vel.toFixed(1)} un/dia. Ruptura estimada em ~${top.dias} dia(s). Receita em risco: ${fmt(top.receitaSemana)}/semana.`;
 
     recomendacoes.push({
       id: uid('r-ruptura'),
@@ -384,7 +395,12 @@ export function generateAnaliseGestorOp(params: {
       id: uid('r-parado'),
       urgencia: 'baixa',
       acao: `Crie uma promoção para ${parados.length} produto(s) parado(s) há mais de 30 dias`,
-      racional: `${parados.slice(0, 3).map(p => `"${p.nome.slice(0, 25)}"`).join(', ')}${parados.length > 3 ? ` e mais ${parados.length - 3}` : ''} sem venda recente, mas com estoque disponível. Capital imobilizado: ${fmt(capitalParado)}.`,
+      racional: `${parados
+        .slice(0, 3)
+        .map((p) => `"${p.nome.slice(0, 25)}"`)
+        .join(
+          ', '
+        )}${parados.length > 3 ? ` e mais ${parados.length - 3}` : ''} sem venda recente, mas com estoque disponível. Capital imobilizado: ${fmt(capitalParado)}.`,
       impacto: `Liberar ${fmt(capitalParado)} em caixa para reposição de best-sellers`,
     });
   }
@@ -394,7 +410,7 @@ export function generateAnaliseGestorOp(params: {
   for (const [sku, m] of margemSku) {
     const rec = recSku.get(sku) ?? 0;
     if (m > 20 && rec > 0) {
-      const prod = produtosAtivos.find(p => p.sku === sku);
+      const prod = produtosAtivos.find((p) => p.sku === sku);
       if (prod) candidatos.push({ sku, nome: prod.nome, margem: m, rec });
     }
   }
@@ -411,7 +427,7 @@ export function generateAnaliseGestorOp(params: {
 
   // R6: CMV alto
   if (cmvPct > 65 && dre.receitaBruta > 500) {
-    const meta = dre.receitaBruta * 0.50;
+    const meta = dre.receitaBruta * 0.5;
     const economia = dre.cmv - meta;
     recomendacoes.push({
       id: uid('r-cmv'),

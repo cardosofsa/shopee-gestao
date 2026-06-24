@@ -5,8 +5,7 @@ export const fmt = (v: number) =>
 
 export const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
-export const fmtNum = (v: number) =>
-  new Intl.NumberFormat('pt-BR').format(v);
+export const fmtNum = (v: number) => new Intl.NumberFormat('pt-BR').format(v);
 
 export function calcularLucroOperacional(
   receita: number,
@@ -19,7 +18,7 @@ export function calcularLucroOperacional(
   return receita - desconto - custoTotal - taxaShopee - das - ads;
 }
 
-export function calcularTaxaShopee(receita: number, percentual = 0.20): number {
+export function calcularTaxaShopee(receita: number, percentual = 0.2): number {
   return receita * percentual;
 }
 
@@ -103,29 +102,47 @@ export function getRankingProdutos(pedidos: Pedido[]): RankingProduto[] {
   return ranking;
 }
 
-export function getStatusEstoque(estoqueAtual: number, vendaDia: number, estoqueSeguranca: number): StatusEstoque {
+export function getStatusEstoque(
+  estoqueAtual: number,
+  vendaDia: number,
+  estoqueSeguranca: number
+): StatusEstoque {
   if (estoqueAtual === 0) return 'Comprar';
   const diasCobertura = vendaDia > 0 ? estoqueAtual / vendaDia : Infinity;
   if (diasCobertura < 7) return 'Comprar';
   if (estoqueAtual <= estoqueSeguranca || diasCobertura < 30) return 'Estoque Baixo';
-  if (isFinite(diasCobertura) && diasCobertura > 90 && estoqueAtual > estoqueSeguranca * 3) return 'Estoque Acima';
+  if (isFinite(diasCobertura) && diasCobertura > 90 && estoqueAtual > estoqueSeguranca * 3)
+    return 'Estoque Acima';
   return 'Estoque Estável';
 }
 
 export function getKPIsMes(pedidos: Pedido[], mes?: string) {
   const agora = mes || new Date().toISOString().slice(0, 7);
-  const doMes = pedidos.filter((p) => p.data.startsWith(agora) && (p.status === 'Concluído' || p.status === 'Enviado'));
+  const doMes = pedidos.filter(
+    (p) => p.data.startsWith(agora) && (p.status === 'Concluído' || p.status === 'Enviado')
+  );
   const faturamento = doMes.reduce((s, p) => s + p.receita, 0);
   const pedidosMes = doMes.length;
-  const lucroOp    = doMes.reduce((s, p) => s + p.lucroOperacional, 0);
-  const ticket     = pedidosMes > 0 ? faturamento / pedidosMes : 0;
-  const das        = doMes.reduce((s, p) => s + p.dasImposto, 0);
+  const lucroOp = doMes.reduce((s, p) => s + p.lucroOperacional, 0);
+  const ticket = pedidosMes > 0 ? faturamento / pedidosMes : 0;
+  const das = doMes.reduce((s, p) => s + p.dasImposto, 0);
   const custoTotal = doMes.reduce((s, p) => s + p.custoTotal, 0);
-  const adsTotal   = doMes.reduce((s, p) => s + p.adsMarketing, 0);
-  const margem     = faturamento > 0 ? (lucroOp / faturamento) * 100 : 0;
-  const roi        = custoTotal > 0 ? (lucroOp / custoTotal) * 100 : 0;
-  const roas       = adsTotal > 0 ? faturamento / adsTotal : 0;
-  return { faturamento, pedidosMes, lucroOp, ticket, lucroLiquido: lucroOp - das, margem, custoTotal, adsTotal, roi, roas };
+  const adsTotal = doMes.reduce((s, p) => s + p.adsMarketing, 0);
+  const margem = faturamento > 0 ? (lucroOp / faturamento) * 100 : 0;
+  const roi = custoTotal > 0 ? (lucroOp / custoTotal) * 100 : 0;
+  const roas = adsTotal > 0 ? faturamento / adsTotal : 0;
+  return {
+    faturamento,
+    pedidosMes,
+    lucroOp,
+    ticket,
+    lucroLiquido: lucroOp - das,
+    margem,
+    custoTotal,
+    adsTotal,
+    roi,
+    roas,
+  };
 }
 
 export function getMesAnterior(mes: string): string {
@@ -136,7 +153,7 @@ export function getMesAnterior(mes: string): string {
 
 export function getCapitalEstoque(produtos: Produto[]): number {
   return produtos
-    .filter((p) => (p.ativo ?? true))
+    .filter((p) => p.ativo ?? true)
     .reduce((s, p) => s + p.estoqueAtual * p.custoUnitario, 0);
 }
 
@@ -157,7 +174,11 @@ export function agruparPorDia(pedidos: Pedido[], mes: string) {
     if (p.status !== 'Concluído' && p.status !== 'Enviado') continue;
     const dia = p.data.slice(8, 10);
     const prev = map.get(dia) || { receita: 0, lucro: 0, pedidos: 0 };
-    map.set(dia, { receita: prev.receita + p.receita, lucro: prev.lucro + p.lucroOperacional, pedidos: prev.pedidos + 1 });
+    map.set(dia, {
+      receita: prev.receita + p.receita,
+      lucro: prev.lucro + p.lucroOperacional,
+      pedidos: prev.pedidos + 1,
+    });
   }
   return Array.from(map.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))

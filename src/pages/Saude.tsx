@@ -1,18 +1,38 @@
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart2,
+  CheckCircle2,
+  HeartPulse,
+  Layers,
+  Package,
+  Percent,
+  ShieldCheck,
+  TrendingUp,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  HeartPulse, TrendingUp, AlertTriangle,
-  CheckCircle2, ArrowRight, ShieldCheck, Package, BarChart2,
-  Layers, Percent,
-} from 'lucide-react';
-import {
-  ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis,
-  Radar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  CartesianGrid,
+  Line,
+  LineChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+
 import { useStore } from '../store';
 import {
-  fmtPct, getKPIsMes, getMesAnterior,
-  getRankingProdutos, getStatusEstoque,
+  fmtPct,
+  getKPIsMes,
+  getMesAnterior,
+  getRankingProdutos,
+  getStatusEstoque,
 } from '../utils/calculations';
 import { C } from '../utils/chartColors';
 
@@ -22,16 +42,18 @@ type Dimension = {
   key: string;
   label: string;
   icon: React.ElementType;
-  score: number;      // 0-100
+  score: number; // 0-100
   maxPts: number;
-  weight: number;     // fraction summing to 1
+  weight: number; // fraction summing to 1
   valor: string;
   meta: string;
   status: 'ok' | 'warn' | 'bad';
   melhorias: string[];
 };
 
-function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
 
 function scoreColor(s: number) {
   if (s >= 75) return C.primary;
@@ -41,7 +63,8 @@ function scoreColor(s: number) {
 
 function scoreBg(s: number) {
   if (s >= 75) return 'bg-core-green/10 text-core-green border-core-green/20';
-  if (s >= 50) return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800';
+  if (s >= 50)
+    return 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800';
   return 'bg-red-50 text-red-500 border-red-200 dark:bg-red-950/20 dark:border-red-800';
 }
 
@@ -54,7 +77,9 @@ function scoreLabel(s: number) {
 }
 
 function mesLabel(m: string) {
-  return new Date(m + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
+  return new Date(m + '-02')
+    .toLocaleString('pt-BR', { month: 'short', year: '2-digit' })
+    .replace('.', '');
 }
 
 // ─── Gauge arc (SVG) ──────────────────────────────────────────────────────────
@@ -74,7 +99,7 @@ function Gauge({ score }: { score: number }) {
 
   function arc(fromDeg: number, toDeg: number, color: string, width: number) {
     const start = polarToXY(fromDeg);
-    const end   = polarToXY(toDeg);
+    const end = polarToXY(toDeg);
     const large = Math.abs(toDeg - fromDeg) > 180 ? 1 : 0;
     return (
       <path
@@ -96,10 +121,25 @@ function Gauge({ score }: { score: number }) {
       {/* Fill */}
       {arc(startAngle, angle, scoreColor(score), 12)}
       {/* Needle */}
-      <line x1={cx} y1={cy} x2={needle.x} y2={needle.y} stroke={scoreColor(score)} strokeWidth={2.5} strokeLinecap="round" />
+      <line
+        x1={cx}
+        y1={cy}
+        x2={needle.x}
+        y2={needle.y}
+        stroke={scoreColor(score)}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
       <circle cx={cx} cy={cy} r={4} fill={scoreColor(score)} />
       {/* Score text */}
-      <text x={cx} y={cy + 24} textAnchor="middle" fontSize={26} fontWeight={700} fill={scoreColor(score)}>
+      <text
+        x={cx}
+        y={cy + 24}
+        textAnchor="middle"
+        fontSize={26}
+        fontWeight={700}
+        fill={scoreColor(score)}
+      >
         {Math.round(score)}
       </text>
       <text x={cx} y={cy + 38} textAnchor="middle" fontSize={9} fill={C.slate}>
@@ -112,22 +152,26 @@ function Gauge({ score }: { score: number }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Saude() {
-  const pedidosAll  = useStore((s) => s.pedidos);
+  const pedidosAll = useStore((s) => s.pedidos);
   const produtosAll = useStore((s) => s.produtos);
-  const historico   = useStore((s) => s.historico);
+  const historico = useStore((s) => s.historico);
 
   const mesFull = new Date().toISOString().slice(0, 7);
 
   // ── Current month KPIs ────────────────────────────────────────────────────
 
   const kpiAtual = useMemo(() => getKPIsMes(pedidosAll, mesFull), [pedidosAll, mesFull]);
-  const kpiAnterior = useMemo(() => getKPIsMes(pedidosAll, getMesAnterior(mesFull)), [pedidosAll, mesFull]);
+  const kpiAnterior = useMemo(
+    () => getKPIsMes(pedidosAll, getMesAnterior(mesFull)),
+    [pedidosAll, mesFull]
+  );
 
   // ── Crescimento MoM ───────────────────────────────────────────────────────
 
-  const crescimento = kpiAnterior.faturamento > 0
-    ? ((kpiAtual.faturamento - kpiAnterior.faturamento) / kpiAnterior.faturamento) * 100
-    : 0;
+  const crescimento =
+    kpiAnterior.faturamento > 0
+      ? ((kpiAtual.faturamento - kpiAnterior.faturamento) / kpiAnterior.faturamento) * 100
+      : 0;
 
   // ── Return rate ───────────────────────────────────────────────────────────
 
@@ -156,7 +200,10 @@ export default function Saude() {
 
     const saudaveis = ativos.filter((p) => {
       const vendas90 = pedidosAll
-        .filter((x) => x.sku === p.sku && x.data >= c90 && (x.status === 'Concluído' || x.status === 'Enviado'))
+        .filter(
+          (x) =>
+            x.sku === p.sku && x.data >= c90 && (x.status === 'Concluído' || x.status === 'Enviado')
+        )
         .reduce((s, x) => s + x.unidadesEstoque, 0);
       const vendaDia = vendas90 / 90;
       const status = getStatusEstoque(p.estoqueAtual, vendaDia, p.estoqueSeguranca);
@@ -169,98 +216,104 @@ export default function Saude() {
   // ── Revenue concentration (HHI-based) ────────────────────────────────────
 
   const concentracao = useMemo(() => {
-    const ranking = getRankingProdutos(pedidosAll.filter((p) => {
-      const d = new Date(); d.setDate(d.getDate() - 90);
-      return p.data >= d.toISOString().slice(0, 10);
-    }));
+    const ranking = getRankingProdutos(
+      pedidosAll.filter((p) => {
+        const d = new Date();
+        d.setDate(d.getDate() - 90);
+        return p.data >= d.toISOString().slice(0, 10);
+      })
+    );
     if (ranking.length === 0) return 100; // no data → worst case
     return ranking[0]?.percentReceita ?? 100; // top product % of revenue
   }, [pedidosAll]);
 
   // ── Dimensions ────────────────────────────────────────────────────────────
 
-  const dimensions: Dimension[] = useMemo(() => [
-    {
-      key: 'rentabilidade',
-      label: 'Rentabilidade',
-      icon: Percent,
-      weight: 0.25,
-      maxPts: 25,
-      score: clamp01(kpiAtual.margem / 20) * 100,
-      valor: fmtPct(kpiAtual.margem / 100),
-      meta: 'Meta: ≥ 20%',
-      status: kpiAtual.margem >= 20 ? 'ok' : kpiAtual.margem >= 10 ? 'warn' : 'bad',
-      melhorias: [
-        'Revise o custo de embalagem e frete — são os mais fáceis de reduzir.',
-        'Use o Simulador para testar preços com margem > 20%.',
-        'Priorize SKUs curva A com margem abaixo da média.',
-      ],
-    },
-    {
-      key: 'crescimento',
-      label: 'Crescimento',
-      icon: TrendingUp,
-      weight: 0.20,
-      maxPts: 20,
-      score: clamp01((crescimento + 20) / 35) * 100,
-      valor: `${crescimento >= 0 ? '+' : ''}${crescimento.toFixed(1)}% MoM`,
-      meta: 'Meta: ≥ +15%',
-      status: crescimento >= 15 ? 'ok' : crescimento >= 0 ? 'warn' : 'bad',
-      melhorias: [
-        'Crie campanhas relâmpago em dias de baixo volume (análise Sazonalidade).',
-        'Ative ADS nos produtos A que têm margem suficiente.',
-        'Considere ampliar o mix de produtos (Curva ABC: SKUs B promissores).',
-      ],
-    },
-    {
-      key: 'estoque',
-      label: 'Estoque',
-      icon: Package,
-      weight: 0.20,
-      maxPts: 20,
-      score: estoqueScore,
-      valor: `${estoqueScore.toFixed(0)}% saudável`,
-      meta: 'Meta: ≥ 80%',
-      status: estoqueScore >= 80 ? 'ok' : estoqueScore >= 50 ? 'warn' : 'bad',
-      melhorias: [
-        'Acesse Reposição para ver os SKUs com cobertura < 7 dias.',
-        'Ajuste o estoque de segurança nos produtos de maior giro.',
-        'Revise produtos parados — considere liquidação ou bundle.',
-      ],
-    },
-    {
-      key: 'qualidade',
-      label: 'Qualidade',
-      icon: ShieldCheck,
-      weight: 0.20,
-      maxPts: 20,
-      score: clamp01(1 - taxaDev / 15) * 100,
-      valor: `${taxaDev.toFixed(1)}% devoluções`,
-      meta: 'Meta: ≤ 2%',
-      status: taxaDev <= 2 ? 'ok' : taxaDev <= 8 ? 'warn' : 'bad',
-      melhorias: [
-        'Analise os motivos de devolução por SKU em Devoluções.',
-        'Melhore as fotos e descrição dos produtos com maior taxa.',
-        'Revise embalagem de produtos frágeis ou de tamanho variável.',
-      ],
-    },
-    {
-      key: 'diversificacao',
-      label: 'Diversificação',
-      icon: Layers,
-      weight: 0.15,
-      maxPts: 15,
-      score: clamp01(1 - (concentracao - 20) / 50) * 100,
-      valor: `Top SKU: ${concentracao.toFixed(0)}% receita`,
-      meta: 'Meta: top SKU ≤ 30%',
-      status: concentracao <= 30 ? 'ok' : concentracao <= 60 ? 'warn' : 'bad',
-      melhorias: [
-        'Invista em desenvolver 2-3 novos SKUs nos próximos meses.',
-        'Expanda o catálogo para reduzir dependência de um único produto.',
-        'Analise os produtos B na Curva ABC — podem virar produtos A.',
-      ],
-    },
-  ], [kpiAtual, crescimento, estoqueScore, taxaDev, concentracao]);
+  const dimensions: Dimension[] = useMemo(
+    () => [
+      {
+        key: 'rentabilidade',
+        label: 'Rentabilidade',
+        icon: Percent,
+        weight: 0.25,
+        maxPts: 25,
+        score: clamp01(kpiAtual.margem / 20) * 100,
+        valor: fmtPct(kpiAtual.margem / 100),
+        meta: 'Meta: ≥ 20%',
+        status: kpiAtual.margem >= 20 ? 'ok' : kpiAtual.margem >= 10 ? 'warn' : 'bad',
+        melhorias: [
+          'Revise o custo de embalagem e frete — são os mais fáceis de reduzir.',
+          'Use o Simulador para testar preços com margem > 20%.',
+          'Priorize SKUs curva A com margem abaixo da média.',
+        ],
+      },
+      {
+        key: 'crescimento',
+        label: 'Crescimento',
+        icon: TrendingUp,
+        weight: 0.2,
+        maxPts: 20,
+        score: clamp01((crescimento + 20) / 35) * 100,
+        valor: `${crescimento >= 0 ? '+' : ''}${crescimento.toFixed(1)}% MoM`,
+        meta: 'Meta: ≥ +15%',
+        status: crescimento >= 15 ? 'ok' : crescimento >= 0 ? 'warn' : 'bad',
+        melhorias: [
+          'Crie campanhas relâmpago em dias de baixo volume (análise Sazonalidade).',
+          'Ative ADS nos produtos A que têm margem suficiente.',
+          'Considere ampliar o mix de produtos (Curva ABC: SKUs B promissores).',
+        ],
+      },
+      {
+        key: 'estoque',
+        label: 'Estoque',
+        icon: Package,
+        weight: 0.2,
+        maxPts: 20,
+        score: estoqueScore,
+        valor: `${estoqueScore.toFixed(0)}% saudável`,
+        meta: 'Meta: ≥ 80%',
+        status: estoqueScore >= 80 ? 'ok' : estoqueScore >= 50 ? 'warn' : 'bad',
+        melhorias: [
+          'Acesse Reposição para ver os SKUs com cobertura < 7 dias.',
+          'Ajuste o estoque de segurança nos produtos de maior giro.',
+          'Revise produtos parados — considere liquidação ou bundle.',
+        ],
+      },
+      {
+        key: 'qualidade',
+        label: 'Qualidade',
+        icon: ShieldCheck,
+        weight: 0.2,
+        maxPts: 20,
+        score: clamp01(1 - taxaDev / 15) * 100,
+        valor: `${taxaDev.toFixed(1)}% devoluções`,
+        meta: 'Meta: ≤ 2%',
+        status: taxaDev <= 2 ? 'ok' : taxaDev <= 8 ? 'warn' : 'bad',
+        melhorias: [
+          'Analise os motivos de devolução por SKU em Devoluções.',
+          'Melhore as fotos e descrição dos produtos com maior taxa.',
+          'Revise embalagem de produtos frágeis ou de tamanho variável.',
+        ],
+      },
+      {
+        key: 'diversificacao',
+        label: 'Diversificação',
+        icon: Layers,
+        weight: 0.15,
+        maxPts: 15,
+        score: clamp01(1 - (concentracao - 20) / 50) * 100,
+        valor: `Top SKU: ${concentracao.toFixed(0)}% receita`,
+        meta: 'Meta: top SKU ≤ 30%',
+        status: concentracao <= 30 ? 'ok' : concentracao <= 60 ? 'warn' : 'bad',
+        melhorias: [
+          'Invista em desenvolver 2-3 novos SKUs nos próximos meses.',
+          'Expanda o catálogo para reduzir dependência de um único produto.',
+          'Analise os produtos B na Curva ABC — podem virar produtos A.',
+        ],
+      },
+    ],
+    [kpiAtual, crescimento, estoqueScore, taxaDev, concentracao]
+  );
 
   // ── Total score ───────────────────────────────────────────────────────────
 
@@ -279,7 +332,7 @@ export default function Saude() {
     const sorted = [...historico].sort((a, b) => a.mesAno.localeCompare(b.mesAno)).slice(-6);
     return sorted.map((h) => {
       const rentScore = clamp01(h.margemPercentual / 20) * 100;
-      const devScore  = 80; // no return data in historico — assume neutral
+      const devScore = 80; // no return data in historico — assume neutral
       const histScore = rentScore * 0.25 + devScore * 0.2 + 75 * 0.2 + 70 * 0.2 + 70 * 0.15;
       return { mes: mesLabel(h.mesAno), score: Math.round(histScore) };
     });
@@ -294,14 +347,15 @@ export default function Saude() {
 
   return (
     <div className="flex-1 p-6 space-y-6">
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-core-green/10 flex items-center justify-center">
           <HeartPulse size={18} className="text-core-green" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Saúde do Negócio</h1>
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            Saúde do Negócio
+          </h1>
           <p className="text-xs text-slate-400 dark:text-slate-500">
             Score composto de 5 dimensões — atualizado em tempo real
           </p>
@@ -310,11 +364,12 @@ export default function Saude() {
 
       {/* Score + Radar */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         {/* Gauge card */}
         <div className="card p-6 flex flex-col items-center justify-center gap-2">
           <Gauge score={totalScore} />
-          <div className={`text-sm font-semibold px-3 py-1 rounded-full border ${scoreBg(totalScore)}`}>
+          <div
+            className={`text-sm font-semibold px-3 py-1 rounded-full border ${scoreBg(totalScore)}`}
+          >
             {scoreLabel(totalScore)}
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center max-w-xs mt-1">
@@ -330,10 +385,7 @@ export default function Saude() {
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={80}>
               <PolarGrid stroke="rgba(148,163,184,0.2)" />
-              <PolarAngleAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: C.slate }}
-              />
+              <PolarAngleAxis dataKey="label" tick={{ fontSize: 10, fill: C.slate }} />
               <Radar
                 dataKey="score"
                 stroke={C.primary}
@@ -351,11 +403,14 @@ export default function Saude() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {dimensions.map((d) => {
           const Icon = d.icon;
-          const statusIcon = d.status === 'ok'
-            ? <CheckCircle2 size={13} className="text-green-500" />
-            : d.status === 'warn'
-            ? <AlertTriangle size={13} className="text-amber-500" />
-            : <AlertTriangle size={13} className="text-red-500" />;
+          const statusIcon =
+            d.status === 'ok' ? (
+              <CheckCircle2 size={13} className="text-green-500" />
+            ) : d.status === 'warn' ? (
+              <AlertTriangle size={13} className="text-amber-500" />
+            ) : (
+              <AlertTriangle size={13} className="text-red-500" />
+            );
 
           return (
             <div
@@ -364,8 +419,8 @@ export default function Saude() {
                 d.status === 'ok'
                   ? 'border-green-100 dark:border-green-900/30'
                   : d.status === 'warn'
-                  ? 'border-amber-100 dark:border-amber-900/30'
-                  : 'border-red-100 dark:border-red-900/30'
+                    ? 'border-amber-100 dark:border-amber-900/30'
+                    : 'border-red-100 dark:border-red-900/30'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
@@ -399,7 +454,6 @@ export default function Saude() {
 
       {/* Two columns: improvements + history */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         {/* Priority improvements */}
         <div className="card p-4">
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
@@ -414,12 +468,17 @@ export default function Saude() {
                     className="w-2 h-2 rounded-full"
                     style={{ background: scoreColor(d.score) }}
                   />
-                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{d.label}</span>
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    {d.label}
+                  </span>
                   <span className="text-[10px] text-slate-400">({Math.round(d.score)}/100)</span>
                 </div>
                 <ul className="space-y-1.5 pl-4">
                   {d.melhorias.map((m, i) => (
-                    <li key={i} className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2">
+                    <li
+                      key={i}
+                      className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-2"
+                    >
                       <span className="text-slate-300 dark:text-slate-600 mt-0.5">→</span>
                       {m}
                     </li>
@@ -435,7 +494,9 @@ export default function Saude() {
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
             Tendência histórica
           </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Score estimado dos últimos meses</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+            Score estimado dos últimos meses
+          </p>
           {historyData.length >= 2 ? (
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={historyData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -467,7 +528,10 @@ export default function Saude() {
               <p className="text-xs text-slate-400 dark:text-slate-500">
                 Feche pelo menos 2 meses no Histórico Mensal para ver a tendência
               </p>
-              <Link to="/financeiro" className="text-xs text-core-green hover:underline flex items-center gap-1 mt-1">
+              <Link
+                to="/financeiro"
+                className="text-xs text-core-green hover:underline flex items-center gap-1 mt-1"
+              >
                 Abrir Histórico Mensal <ArrowRight size={11} />
               </Link>
             </div>
@@ -482,12 +546,12 @@ export default function Saude() {
         </p>
         <div className="flex flex-wrap gap-2">
           {[
-            { to: '/analise',    label: 'Análise Financeira' },
-            { to: '/abc',        label: 'Curva ABC' },
+            { to: '/analise', label: 'Análise Financeira' },
+            { to: '/abc', label: 'Curva ABC' },
             { to: '/devolucoes', label: 'Devoluções' },
-            { to: '/reposicao',  label: 'Reposição' },
-            { to: '/simulador',  label: 'Simulador de Preços' },
-            { to: '/previsao',   label: 'Previsão de Vendas' },
+            { to: '/reposicao', label: 'Reposição' },
+            { to: '/simulador', label: 'Simulador de Preços' },
+            { to: '/previsao', label: 'Previsão de Vendas' },
           ].map(({ to, label }) => (
             <Link
               key={to}
@@ -500,7 +564,6 @@ export default function Saude() {
           ))}
         </div>
       </div>
-
     </div>
   );
 }

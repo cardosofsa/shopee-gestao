@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -26,28 +26,43 @@ const ToastCtx = createContext<ToastFn>(() => {});
 export const useToast = () => useContext(ToastCtx);
 
 const CONFIG: Record<ToastType, { icon: React.ElementType; card: string; icon_: string }> = {
-  success: { icon: CheckCircle2, card: 'bg-white border-emerald-200 shadow-emerald-100/60',  icon_: 'text-emerald-500' },
-  error:   { icon: XCircle,      card: 'bg-white border-red-200    shadow-red-100/60',    icon_: 'text-red-500'     },
-  warning: { icon: AlertCircle,  card: 'bg-white border-amber-200  shadow-amber-100/60',  icon_: 'text-amber-500'   },
-  info:    { icon: Info,         card: 'bg-white border-slate-200  shadow-slate-100/60',  icon_: 'text-slate-400'   },
+  success: {
+    icon: CheckCircle2,
+    card: 'bg-white border-emerald-200 shadow-emerald-100/60',
+    icon_: 'text-emerald-500',
+  },
+  error: {
+    icon: XCircle,
+    card: 'bg-white border-red-200    shadow-red-100/60',
+    icon_: 'text-red-500',
+  },
+  warning: {
+    icon: AlertCircle,
+    card: 'bg-white border-amber-200  shadow-amber-100/60',
+    icon_: 'text-amber-500',
+  },
+  info: {
+    icon: Info,
+    card: 'bg-white border-slate-200  shadow-slate-100/60',
+    icon_: 'text-slate-400',
+  },
 };
 
-function ToastCard({
-  item,
-  onDismiss,
-}: {
-  item: ToastItem;
-  onDismiss: (id: string) => void;
-}) {
+function ToastCard({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {
   const { icon: Icon, card, icon_ } = CONFIG[item.type];
   return (
-    <div className={`animate-toast-in flex items-start gap-3 pl-4 pr-3 py-3.5 rounded-2xl border shadow-xl max-w-sm w-full pointer-events-auto ${card}`}>
+    <div
+      className={`animate-toast-in flex items-start gap-3 pl-4 pr-3 py-3.5 rounded-2xl border shadow-xl max-w-sm w-full pointer-events-auto ${card}`}
+    >
       <Icon size={16} className={`flex-shrink-0 mt-0.5 ${icon_}`} />
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-700 leading-relaxed">{item.message}</p>
         {item.action && (
           <button
-            onClick={() => { item.action!.onClick(); onDismiss(item.id); }}
+            onClick={() => {
+              item.action!.onClick();
+              onDismiss(item.id);
+            }}
             className="mt-1.5 text-xs font-semibold text-core-green hover:text-core-green transition-colors"
           >
             {item.action.label}

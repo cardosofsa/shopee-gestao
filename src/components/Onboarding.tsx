@@ -1,6 +1,7 @@
+import { ArrowRight, CheckCircle2, Circle, Rocket, X } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { X, CheckCircle2, Circle, ArrowRight, Rocket } from 'lucide-react';
+
 import { useStore } from '../store';
 
 interface Step {
@@ -13,58 +14,77 @@ interface Step {
 }
 
 export default function Onboarding() {
-  const onboardingCompleted   = useStore((s) => s.onboardingCompleted);
+  const onboardingCompleted = useStore((s) => s.onboardingCompleted);
   const setOnboardingCompleted = useStore((s) => s.setOnboardingCompleted);
-  const produtos   = useStore((s) => s.produtos);
-  const pedidos    = useStore((s) => s.pedidos);
-  const despesas   = useStore((s) => s.despesas);
+  const produtos = useStore((s) => s.produtos);
+  const pedidos = useStore((s) => s.pedidos);
+  const despesas = useStore((s) => s.despesas);
   const configuracoes = useStore((s) => s.configuracoes);
 
-  const steps: Step[] = useMemo(() => [
-    {
-      id: 'produtos',
-      title: 'Cadastre seus produtos',
-      desc: 'Adicione SKU, custo unitário e estoque de segurança para cada item que você vende.',
-      action: 'Ir para Configurações',
-      href: '/configs',
-      done: produtos.some((p) => !['ALF-118','ALF-500','FITA-PCX','FITA-BIKE','FITA-MOTO','CJ13-3','CJ13-2','L14-4','CANMAD','BAINHAC','BAINHAC-PREMIUM','CANMAD-BAINHAC'].includes(p.sku)),
-    },
-    {
-      id: 'das',
-      title: 'Configure sua alíquota DAS',
-      desc: 'Defina a alíquota do Simples Nacional para que os impostos sejam calculados corretamente.',
-      action: 'Ir para Configurações',
-      href: '/configs',
-      done: configuracoes.aliquotaDAS > 0,
-    },
-    {
-      id: 'pedidos',
-      title: 'Importe seus pedidos',
-      desc: 'Faça upload de uma planilha ou cadastre pedidos manualmente para ver o Dashboard.',
-      action: 'Ir para Vendas',
-      href: '/vendas',
-      done: pedidos.length > 0,
-    },
-    {
-      id: 'despesas',
-      title: 'Lance suas despesas operacionais',
-      desc: 'Registre custos fixos (embalagem, combustível, etc.) para ter o lucro líquido real.',
-      action: 'Ir para Despesas',
-      href: '/despesas',
-      done: despesas.filter((d) => !d.compraRef).length > 0,
-    },
-    {
-      id: 'calculadora',
-      title: 'Precifique seus produtos',
-      desc: 'Use a Calculadora para descobrir o preço ideal com base nos custos reais da Shopee.',
-      action: 'Abrir Calculadora',
-      href: '/calculadora',
-      done: useStore.getState().precificacoesSalvas.length > 0,
-    },
-  ], [produtos, pedidos, despesas, configuracoes]);
+  const steps: Step[] = useMemo(
+    () => [
+      {
+        id: 'produtos',
+        title: 'Cadastre seus produtos',
+        desc: 'Adicione SKU, custo unitário e estoque de segurança para cada item que você vende.',
+        action: 'Ir para Configurações',
+        href: '/configs',
+        done: produtos.some(
+          (p) =>
+            ![
+              'ALF-118',
+              'ALF-500',
+              'FITA-PCX',
+              'FITA-BIKE',
+              'FITA-MOTO',
+              'CJ13-3',
+              'CJ13-2',
+              'L14-4',
+              'CANMAD',
+              'BAINHAC',
+              'BAINHAC-PREMIUM',
+              'CANMAD-BAINHAC',
+            ].includes(p.sku)
+        ),
+      },
+      {
+        id: 'das',
+        title: 'Configure sua alíquota DAS',
+        desc: 'Defina a alíquota do Simples Nacional para que os impostos sejam calculados corretamente.',
+        action: 'Ir para Configurações',
+        href: '/configs',
+        done: configuracoes.aliquotaDAS > 0,
+      },
+      {
+        id: 'pedidos',
+        title: 'Importe seus pedidos',
+        desc: 'Faça upload de uma planilha ou cadastre pedidos manualmente para ver o Dashboard.',
+        action: 'Ir para Vendas',
+        href: '/vendas',
+        done: pedidos.length > 0,
+      },
+      {
+        id: 'despesas',
+        title: 'Lance suas despesas operacionais',
+        desc: 'Registre custos fixos (embalagem, combustível, etc.) para ter o lucro líquido real.',
+        action: 'Ir para Despesas',
+        href: '/despesas',
+        done: despesas.filter((d) => !d.compraRef).length > 0,
+      },
+      {
+        id: 'calculadora',
+        title: 'Precifique seus produtos',
+        desc: 'Use a Calculadora para descobrir o preço ideal com base nos custos reais da Shopee.',
+        action: 'Abrir Calculadora',
+        href: '/calculadora',
+        done: useStore.getState().precificacoesSalvas.length > 0,
+      },
+    ],
+    [produtos, pedidos, despesas, configuracoes]
+  );
 
   const completedCount = steps.filter((s) => s.done).length;
-  const allDone        = completedCount === steps.length;
+  const allDone = completedCount === steps.length;
 
   if (onboardingCompleted) return null;
 
@@ -78,7 +98,9 @@ export default function Onboarding() {
               <Rocket size={18} className="text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-base">Bem-vindo ao Gestão Shopee!</h2>
+              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                Bem-vindo ao Gestão Shopee!
+              </h2>
               <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
                 {completedCount}/{steps.length} passos concluídos
               </p>
@@ -113,23 +135,32 @@ export default function Onboarding() {
               }`}
             >
               <div className="flex-shrink-0 mt-0.5">
-                {step.done
-                  ? <CheckCircle2 size={18} className="text-emerald-500" />
-                  : <Circle size={18} className="text-slate-300 dark:text-slate-500" />
-                }
+                {step.done ? (
+                  <CheckCircle2 size={18} className="text-emerald-500" />
+                ) : (
+                  <Circle size={18} className="text-slate-300 dark:text-slate-500" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">Passo {i + 1}</span>
+                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                    Passo {i + 1}
+                  </span>
                   {step.done && (
-                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-medium">Concluído</span>
+                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-medium">
+                      Concluído
+                    </span>
                   )}
                 </div>
-                <p className={`text-sm font-semibold leading-tight ${step.done ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-800 dark:text-slate-100'}`}>
+                <p
+                  className={`text-sm font-semibold leading-tight ${step.done ? 'text-slate-500 dark:text-slate-400 line-through' : 'text-slate-800 dark:text-slate-100'}`}
+                >
                   {step.title}
                 </p>
                 {!step.done && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{step.desc}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    {step.desc}
+                  </p>
                 )}
               </div>
               {!step.done && (

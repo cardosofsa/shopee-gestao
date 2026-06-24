@@ -1,11 +1,14 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { useStore } from '../store';
 import type { Pedido, Tarefa } from '../types';
 
 // ─── Factory helpers ──────────────────────────────────────────────────────────
 
 let _seq = 0;
-function makeId() { return `test-${++_seq}`; }
+function makeId() {
+  return `test-${++_seq}`;
+}
 
 function makePedido(overrides: Partial<Pedido> = {}): Pedido {
   return {
@@ -21,11 +24,11 @@ function makePedido(overrides: Partial<Pedido> = {}): Pedido {
     unidadesEstoque: 1,
     receita: 50,
     desconto: 0,
-    custoTotal: 10.00,
+    custoTotal: 10.0,
     taxaShopee: 5,
     dasImposto: 3,
     adsMarketing: 1,
-    lucroOperacional: 31.00,
+    lucroOperacional: 31.0,
     margemSCustoProduto: 400,
     margemSCustoTotal: 62,
     observacoes: '',
@@ -178,9 +181,11 @@ describe('updatePedidoStatus — efeito no estoque', () => {
 
   beforeEach(() => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-002' ? { ...p, estoqueAtual: FITA_BIKE_INITIAL } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) =>
+          p.sku === 'PROD-002' ? { ...p, estoqueAtual: FITA_BIKE_INITIAL } : p
+        ),
     });
   });
 
@@ -217,7 +222,12 @@ describe('updatePedidoStatus — efeito no estoque', () => {
   });
 
   it('loja Projetando não afeta estoque', () => {
-    const p = makePedido({ sku: 'PROD-002', status: 'Em processo', loja: 'Projetando', unidadesEstoque: 5 });
+    const p = makePedido({
+      sku: 'PROD-002',
+      status: 'Em processo',
+      loja: 'Projetando',
+      unidadesEstoque: 5,
+    });
     useStore.getState().addPedido(p);
     useStore.getState().updatePedidoStatus(p.id, 'Concluído');
     const prod = useStore.getState().produtos.find((x) => x.sku === 'PROD-002');
@@ -226,9 +236,9 @@ describe('updatePedidoStatus — efeito no estoque', () => {
 
   it('estoque não vai abaixo de zero', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-002' ? { ...p, estoqueAtual: 1 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-002' ? { ...p, estoqueAtual: 1 } : p)),
     });
     const p = makePedido({ sku: 'PROD-002', status: 'Em processo', unidadesEstoque: 99 });
     useStore.getState().addPedido(p);
@@ -250,9 +260,9 @@ describe('updateEstoque', () => {
 
   it('delta negativo diminui estoque', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 20 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-001' ? { ...p, estoqueAtual: 20 } : p)),
     });
     useStore.getState().updateEstoque('PROD-001', -5);
     const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
@@ -261,9 +271,9 @@ describe('updateEstoque', () => {
 
   it('estoque não fica negativo', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 3 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-001' ? { ...p, estoqueAtual: 3 } : p)),
     });
     useStore.getState().updateEstoque('PROD-001', -100);
     const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
@@ -362,13 +372,20 @@ describe('setLojaFiltro', () => {
 describe('addAjuste', () => {
   it('entrada aumenta estoqueAtual imediatamente', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p)),
     });
     useStore.getState().addAjuste({
-      id: 'aj1', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'entrada', quantidade: 5,
-      estoqueAntes: 10, estoqueDepois: 15, motivo: 'teste', criadoEm: new Date().toISOString(),
+      id: 'aj1',
+      sku: 'PROD-001',
+      produto: 'Produto Exemplo A',
+      tipo: 'entrada',
+      quantidade: 5,
+      estoqueAntes: 10,
+      estoqueDepois: 15,
+      motivo: 'teste',
+      criadoEm: new Date().toISOString(),
     });
     const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
     expect(prod?.estoqueAtual).toBe(15);
@@ -376,13 +393,20 @@ describe('addAjuste', () => {
 
   it('saida diminui estoqueAtual imediatamente', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-001' ? { ...p, estoqueAtual: 10 } : p)),
     });
     useStore.getState().addAjuste({
-      id: 'aj2', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'saida', quantidade: 3,
-      estoqueAntes: 10, estoqueDepois: 7, motivo: 'teste', criadoEm: new Date().toISOString(),
+      id: 'aj2',
+      sku: 'PROD-001',
+      produto: 'Produto Exemplo A',
+      tipo: 'saida',
+      quantidade: 3,
+      estoqueAntes: 10,
+      estoqueDepois: 7,
+      motivo: 'teste',
+      criadoEm: new Date().toISOString(),
     });
     const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
     expect(prod?.estoqueAtual).toBe(7);
@@ -391,21 +415,35 @@ describe('addAjuste', () => {
   it('ajuste é adicionado à lista de ajustes', () => {
     const before = useStore.getState().ajustes.length;
     useStore.getState().addAjuste({
-      id: 'aj3', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'entrada', quantidade: 1,
-      estoqueAntes: 10, estoqueDepois: 11, motivo: 'teste', criadoEm: new Date().toISOString(),
+      id: 'aj3',
+      sku: 'PROD-001',
+      produto: 'Produto Exemplo A',
+      tipo: 'entrada',
+      quantidade: 1,
+      estoqueAntes: 10,
+      estoqueDepois: 11,
+      motivo: 'teste',
+      criadoEm: new Date().toISOString(),
     });
     expect(useStore.getState().ajustes.length).toBe(before + 1);
   });
 
   it('saida não deixa estoque negativo', () => {
     useStore.setState({
-      produtos: useStore.getState().produtos.map((p) =>
-        p.sku === 'PROD-001' ? { ...p, estoqueAtual: 2 } : p,
-      ),
+      produtos: useStore
+        .getState()
+        .produtos.map((p) => (p.sku === 'PROD-001' ? { ...p, estoqueAtual: 2 } : p)),
     });
     useStore.getState().addAjuste({
-      id: 'aj4', sku: 'PROD-001', produto: 'Produto Exemplo A', tipo: 'saida', quantidade: 100,
-      estoqueAntes: 2, estoqueDepois: 0, motivo: 'teste', criadoEm: new Date().toISOString(),
+      id: 'aj4',
+      sku: 'PROD-001',
+      produto: 'Produto Exemplo A',
+      tipo: 'saida',
+      quantidade: 100,
+      estoqueAntes: 2,
+      estoqueDepois: 0,
+      motivo: 'teste',
+      criadoEm: new Date().toISOString(),
     });
     const prod = useStore.getState().produtos.find((p) => p.sku === 'PROD-001');
     expect(prod?.estoqueAtual).toBe(0);

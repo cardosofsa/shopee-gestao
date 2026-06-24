@@ -2,6 +2,8 @@
 // Tenta até MAX_ATTEMPTS vezes, dobrando o delay a cada falha.
 // Erros de autenticação (401/403) não são retentados.
 
+import { pushNotification } from './notifications';
+
 const MAX_ATTEMPTS = 3;
 const BASE_DELAY_MS = 500;
 
@@ -13,10 +15,7 @@ function isAuthError(err: unknown): boolean {
   return false;
 }
 
-export async function withRetry<T>(
-  operation: () => Promise<T>,
-  label?: string
-): Promise<T> {
+export async function withRetry<T>(operation: () => Promise<T>, label?: string): Promise<T> {
   _syncCount++;
   _notifySyncState('syncing');
 
@@ -28,7 +27,9 @@ export async function withRetry<T>(
         _syncCount--;
         if (_syncCount === 0) {
           _notifySyncState('saved');
-          setTimeout(() => { if (_syncCount === 0) _notifySyncState('idle'); }, 2000);
+          setTimeout(() => {
+            if (_syncCount === 0) _notifySyncState('idle');
+          }, 2000);
         }
         return result;
       } catch (err) {
@@ -47,7 +48,9 @@ export async function withRetry<T>(
   if (_syncCount === 0) _notifySyncState('idle');
 
   const msg = lastError instanceof Error ? lastError.message : String(lastError);
-  console.error(`[sync] Falha após ${MAX_ATTEMPTS} tentativas${label ? ` (${label})` : ''}: ${msg}`);
+  console.error(
+    `[sync] Falha após ${MAX_ATTEMPTS} tentativas${label ? ` (${label})` : ''}: ${msg}`
+  );
   throw lastError;
 }
 
@@ -63,6 +66,7 @@ export function setSyncErrorListener(fn: SyncErrorListener) {
 export function notifySyncError(message: string) {
   if (_errorListener) _errorListener(message);
   else console.warn('[sync] Sem listener registrado:', message);
+  pushNotification(message, 'error');
 }
 
 // ─── Limit reached listener ───────────────────────────────────────────────────
@@ -77,6 +81,7 @@ export function setLimitListener(fn: LimitListener | null) {
 export function notifyLimitReached(message: string, type: 'warning' | 'error', showUpgrade = true) {
   if (_limitListener) _limitListener(message, type, showUpgrade);
   else console.warn('[limit]', message);
+  pushNotification(message, type);
 }
 
 // ─── Sync state listener ──────────────────────────────────────────────────────

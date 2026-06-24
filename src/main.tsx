@@ -1,6 +1,8 @@
+import './index.css';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
+
 import App from './App.tsx';
 
 // Aplica dark mode antes do primeiro render para evitar flash.
@@ -12,10 +14,12 @@ try {
       document.documentElement.classList.add('dark');
     }
   }
-} catch { /* modo offline ou localStorage bloqueado */ }
+} catch {
+  /* modo offline ou localStorage bloqueado */
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 );
