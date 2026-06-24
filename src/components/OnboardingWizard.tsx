@@ -20,13 +20,13 @@ export function OnboardingWizard({ userId, onComplete }: Props) {
   const [segment, setSegment] = useState<SegmentKey>('ecommerce');
   const [businessName, setBusinessName] = useState('');
   const [modules, setModules] = useState<Set<ModuleKey>>(
-    new Set(SEGMENTS.ecommerce.modulosPadrao as ModuleKey[])
+    new Set<ModuleKey>([...SEGMENTS.ecommerce.modulosPadrao])
   );
   const [saving, setSaving] = useState(false);
 
   function handleSegmentSelect(seg: SegmentKey) {
     setSegment(seg);
-    setModules(new Set(SEGMENTS[seg].modulosPadrao as ModuleKey[]));
+    setModules(new Set<ModuleKey>([...SEGMENTS[seg].modulosPadrao]));
   }
 
   function toggleModule(key: ModuleKey) {

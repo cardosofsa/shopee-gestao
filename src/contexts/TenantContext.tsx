@@ -29,7 +29,7 @@ const TenantContext = createContext<TenantCtx>({
   segment: 'ecommerce',
   businessName: '',
   onboardingDone: false,
-  activeModules: new Set(SEGMENTS.ecommerce.modulosPadrao as ModuleKey[]),
+  activeModules: new Set<ModuleKey>([...SEGMENTS.ecommerce.modulosPadrao]),
   terminologia: defaultTerminologia,
   isModuleEnabled: () => true,
   isLoading: true,
@@ -47,7 +47,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [businessName, setBusinessName] = useState('');
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [activeModules, setActiveModules] = useState<Set<ModuleKey>>(
-    new Set(SEGMENTS.ecommerce.modulosPadrao as ModuleKey[])
+    new Set<ModuleKey>([...SEGMENTS.ecommerce.modulosPadrao])
   );
   const [terminologia, setTerminologia] = useState<Terminologia>(defaultTerminologia);
   const [tick, setTick] = useState(0);
@@ -102,7 +102,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Sem configuração: usa padrão do segmento
         const defaults = SEGMENTS[seg]?.modulosPadrao ?? SEGMENTS.ecommerce.modulosPadrao;
-        setActiveModules(new Set(defaults as ModuleKey[]));
+        setActiveModules(new Set<ModuleKey>([...defaults]));
       }
 
       setIsLoading(false);
