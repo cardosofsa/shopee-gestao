@@ -34,6 +34,8 @@ import {
   Waves,
 } from 'lucide-react';
 
+import type { ModuleKey } from './config/modules';
+
 export type NavGroupKey =
   | 'root'
   | 'Operação'
@@ -55,6 +57,8 @@ export interface NavItem {
   end?: boolean;
   /** badge key — resolved dynamically in Layout */
   badge?: 'alertas';
+  /** ModuleKey this nav item belongs to — filtered by TenantContext */
+  module?: ModuleKey;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -74,6 +78,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/vendas',
     icon: ShoppingCart,
     group: 'Operação',
+    module: 'pedidos',
     keywords: 'vendas orders',
   },
   {
@@ -81,6 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/estoque',
     icon: Package,
     group: 'Operação',
+    module: 'estoque',
     keywords: 'produto sku inventory',
   },
   {
@@ -88,6 +94,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/clientes',
     icon: UserRound,
     group: 'Operação',
+    module: 'clientes',
     keywords: 'compradores crm',
   },
   {
@@ -95,6 +102,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/devolucoes',
     icon: RotateCcw,
     group: 'Operação',
+    module: 'devolucoes',
     keywords: 'retorno taxa',
   },
   {
@@ -102,6 +110,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/reposicao',
     icon: RefreshCw,
     group: 'Operação',
+    module: 'reposicao',
     keywords: 'comprar repor urgente',
   },
 
@@ -111,6 +120,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/financeiro',
     icon: TrendingUp,
     group: 'Financeiro',
+    module: 'financeiro',
     keywords: 'histórico mensal fechar mês pl dre',
   },
   {
@@ -118,6 +128,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/despesas',
     icon: Receipt,
     group: 'Financeiro',
+    module: 'despesas',
     keywords: 'custos gastos operacionais',
   },
   {
@@ -125,6 +136,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/fluxo-caixa',
     icon: Waves,
     group: 'Financeiro',
+    module: 'fluxo_caixa',
     keywords: 'cash flow saldo',
   },
   {
@@ -132,6 +144,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/contas-pagar',
     icon: CreditCard,
     group: 'Financeiro',
+    module: 'contas_pagar',
     keywords: 'bills vencimento pagamento',
   },
   {
@@ -139,6 +152,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/break-even',
     icon: Crosshair,
     group: 'Financeiro',
+    module: 'break_even',
     keywords: 'ponto equilíbrio',
   },
 
@@ -148,6 +162,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/campanhas',
     icon: Megaphone,
     group: 'Marketing',
+    module: 'campanhas',
     keywords: 'promoção desconto ads acos',
   },
   {
@@ -155,6 +170,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/precificacao',
     icon: Tag,
     group: 'Marketing',
+    module: 'precificacao',
     keywords: 'preço salvo histórico',
   },
   {
@@ -162,6 +178,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/calculadora',
     icon: Calculator,
     group: 'Marketing',
+    module: 'calculadora',
     keywords: 'calc margem markup preço',
   },
 
@@ -171,6 +188,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/analise',
     icon: CalendarSearch,
     group: 'Análise',
+    module: 'analise',
     keywords: 'período data range abc comparativo sazonalidade',
   },
   {
@@ -178,6 +196,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/insights',
     icon: Lightbulb,
     group: 'Análise',
+    module: 'insights',
     keywords: 'análise automática inteligência',
   },
   {
@@ -186,6 +205,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Bell,
     group: 'Análise',
     badge: 'alertas',
+    module: 'alertas',
     keywords: 'avisos crítico estoque',
   },
 
@@ -195,6 +215,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/metas',
     icon: Target,
     group: 'Gestão',
+    module: 'metas',
     keywords: 'objetivo goal',
   },
   {
@@ -202,6 +223,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/kanban',
     icon: KanbanSquare,
     group: 'Gestão',
+    module: 'tarefas',
     keywords: 'kanban todo list',
   },
   {
@@ -209,6 +231,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/calendario',
     icon: CalendarDays,
     group: 'Gestão',
+    module: 'calendario',
     keywords: 'agenda datas',
   },
   {
@@ -216,6 +239,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/fornecedores',
     icon: Truck,
     group: 'Gestão',
+    module: 'fornecedores',
     keywords: 'supplier vendor',
   },
   {
@@ -232,6 +256,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/importar',
     icon: FileUp,
     group: 'Dados',
+    module: 'importar',
     keywords: 'csv xlsx upload',
   },
   {
@@ -239,6 +264,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/exportar',
     icon: Download,
     group: 'Dados',
+    module: 'exportar',
     keywords: 'backup xlsx download',
   },
   {
@@ -246,6 +272,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/relatorio',
     icon: FileText,
     group: 'Dados',
+    module: 'relatorio',
     keywords: 'imprimir pdf executivo',
   },
 
@@ -263,6 +290,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/metas-produto',
     icon: Target,
     group: 'Gestão',
+    module: 'metas',
     sidebar: false,
     keywords: 'meta sku mensal progresso',
   },
@@ -271,6 +299,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/anual',
     icon: CalendarRange,
     group: 'Análise',
+    module: 'comparativo',
     sidebar: false,
     keywords: 'ano a ano yoy crescimento',
   },
@@ -279,6 +308,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/previsao',
     icon: Telescope,
     group: 'Análise',
+    module: 'analise',
     sidebar: false,
     keywords: 'forecast projeção tendência',
   },
@@ -287,6 +317,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/simulador',
     icon: FlaskConical,
     group: 'Análise',
+    module: 'analise',
     sidebar: false,
     keywords: 'cenário what-if',
   },
@@ -295,6 +326,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/saude',
     icon: HeartPulse,
     group: 'Análise',
+    module: 'analise',
     sidebar: false,
     keywords: 'score saúde radar dimensão',
   },
@@ -303,6 +335,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/mapa-calor',
     icon: Activity,
     group: 'Análise',
+    module: 'analise',
     sidebar: false,
     keywords: 'heatmap dias semana calor',
   },
@@ -311,6 +344,7 @@ export const NAV_ITEMS: NavItem[] = [
     to: '/categorias',
     icon: Layers,
     group: 'Análise',
+    module: 'analise',
     sidebar: false,
     keywords: 'categoria rentabilidade grupo',
   },

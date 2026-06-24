@@ -17,6 +17,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useTenant } from '../contexts/TenantContext';
 import { useAlertas } from '../hooks/useAlertas';
 import { useRealtime } from '../hooks/useRealtime';
 import {
@@ -254,6 +255,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const criticosCount = alertas.filter((a) => a.severidade === 'critico').length;
   const favoritas = useStore((s) => s.paginasFavoritas);
   const toggleFavorito = useStore((s) => s.toggleFavorito);
+  const { isModuleEnabled, isLoading: tenantLoading } = useTenant();
 
   // Collapsible groups — persisted in localStorage
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(() => {
@@ -332,22 +334,24 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
             {gi > 0 && collapsed && <div className="w-5 h-px bg-white/[0.08] mx-auto mb-2" />}
             {!isGroupCollapsed && (
               <div className="space-y-0.5">
-                {group.items.map((item) => {
-                  const resolved: ResolvedNavItem =
-                    item.badge === 'alertas'
-                      ? { ...item, badge: criticosCount || undefined }
-                      : { ...item, badge: undefined };
-                  return (
-                    <NavItem
-                      key={item.to}
-                      item={resolved}
-                      collapsed={collapsed}
-                      isFav={favoritas.includes(item.to)}
-                      onNavigate={onNavigate}
-                      onToggleFav={toggleFavorito}
-                    />
-                  );
-                })}
+                {group.items
+                  .filter((item) => tenantLoading || !item.module || isModuleEnabled(item.module))
+                  .map((item) => {
+                    const resolved: ResolvedNavItem =
+                      item.badge === 'alertas'
+                        ? { ...item, badge: criticosCount || undefined }
+                        : { ...item, badge: undefined };
+                    return (
+                      <NavItem
+                        key={item.to}
+                        item={resolved}
+                        collapsed={collapsed}
+                        isFav={favoritas.includes(item.to)}
+                        onNavigate={onNavigate}
+                        onToggleFav={toggleFavorito}
+                      />
+                    );
+                  })}
               </div>
             )}
           </div>

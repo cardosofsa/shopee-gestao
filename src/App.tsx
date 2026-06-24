@@ -3,10 +3,13 @@ import { Home } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import { AdminGuard } from './components/AdminGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { SkeletonPage } from './components/ui/Skeleton';
+import { AdminProvider } from './contexts/AdminContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TenantProvider } from './contexts/TenantContext';
 import { queryClient } from './lib/queryClient';
 import Login from './pages/Login';
 import Lancamento from './pages/public/Lancamento';
@@ -48,6 +51,13 @@ const MapaCalor = lazy(() => import('./pages/MapaCalor'));
 const Categorias = lazy(() => import('./pages/Categorias'));
 const ComparativoAnual = lazy(() => import('./pages/ComparativoAnual'));
 const Exportar = lazy(() => import('./pages/Exportar'));
+
+const AdminLayout = lazy(() => import('./modules/admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./modules/admin/pages/AdminDashboard'));
+const AdminTenants = lazy(() => import('./modules/admin/pages/AdminTenants'));
+const AdminTenantDetail = lazy(() => import('./modules/admin/pages/AdminTenantDetail'));
+const AdminPlans = lazy(() => import('./modules/admin/pages/AdminPlans'));
+const AdminAuditLog = lazy(() => import('./modules/admin/pages/AdminAuditLog'));
 
 function PageFallback() {
   return <SkeletonPage />;
@@ -114,6 +124,22 @@ function AppOrPublic() {
   // Autenticado → app completo
   return (
     <Routes>
+      <Route
+        path="/admin"
+        element={
+          <AdminGuard>
+            <Suspense fallback={<PageFallback />}>
+              <AdminLayout />
+            </Suspense>
+          </AdminGuard>
+        }
+      >
+        <Route index element={page(AdminDashboard, 'Admin')} />
+        <Route path="tenants" element={page(AdminTenants, 'Assinantes')} />
+        <Route path="tenants/:userId" element={page(AdminTenantDetail, 'Assinante')} />
+        <Route path="plans" element={page(AdminPlans, 'Planos')} />
+        <Route path="audit" element={page(AdminAuditLog, 'Auditoria')} />
+      </Route>
       <Route path="/" element={<Layout />}>
         <Route index element={page(Dashboard, 'Dashboard')} />
         <Route path="vendas" element={page(Vendas, 'Vendas')} />
@@ -184,15 +210,19 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Páginas públicas fixas */}
-            <Route path="/lancamento" element={<Lancamento />} />
-            <Route path="/login" element={<LoginOrRedirect />} />
-            <Route path="/registro" element={<RegistroOrRedirect />} />
+          <TenantProvider>
+            <AdminProvider>
+              <Routes>
+                {/* Páginas públicas fixas */}
+                <Route path="/lancamento" element={<Lancamento />} />
+                <Route path="/login" element={<LoginOrRedirect />} />
+                <Route path="/registro" element={<RegistroOrRedirect />} />
 
-            {/* Tudo mais: Landing (/) ou app autenticado */}
-            <Route path="/*" element={<AppOrPublic />} />
-          </Routes>
+                {/* Tudo mais: Landing (/) ou app autenticado */}
+                <Route path="/*" element={<AppOrPublic />} />
+              </Routes>
+            </AdminProvider>
+          </TenantProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
