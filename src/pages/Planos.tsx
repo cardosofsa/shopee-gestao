@@ -1,7 +1,25 @@
-import { ArrowRight, CheckCircle2, Crown, Sparkles, Users, X, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Crown,
+  Puzzle,
+  Sparkles,
+  Users,
+  X,
+  Zap,
+} from 'lucide-react';
+import { useState } from 'react';
 
+import type { ModuleKey } from '../config/modules';
+import { MODULE_GROUPS } from '../config/modules';
+import type { SegmentKey } from '../config/segments';
+import { SEGMENTS } from '../config/segments';
 import { useStore } from '../store';
 import type { PlanFeatures } from '../types';
+
+const BASE_PRICE = 29.9;
+const PRICE_PER_MODULE = 9.9;
 
 // Editar preços aqui quando Stripe estiver configurado
 const PLAN_PRICES: Record<string, string> = {
@@ -131,7 +149,7 @@ const PLANS = [
   },
 ];
 
-const FEATURE_ROWS: { key: keyof PlanFeatures; label: string; tooltip?: string }[] = [
+const FEATURE_ROWS: { key: keyof PlanFeatures; label: string }[] = [
   { key: 'kanban', label: 'Kanban de tarefas' },
   { key: 'calculadora', label: 'Calculadora de preços' },
   { key: 'exportXlsx', label: 'Export XLSX' },
@@ -189,6 +207,182 @@ function fmtLimite(val: number | null) {
   return val.toLocaleString('pt-BR');
 }
 
+const SEGMENT_OPTIONS: { key: SegmentKey; label: string; icon: string }[] = [
+  { key: 'ecommerce', label: 'E-commerce', icon: '🛒' },
+  { key: 'varejo', label: 'Varejo', icon: '🏪' },
+  { key: 'atacado', label: 'Atacado', icon: '📦' },
+  { key: 'servicos', label: 'Serviços', icon: '🔧' },
+  { key: 'industria', label: 'Indústria', icon: '🏭' },
+];
+
+function CustomPlanCard({ currentPlanId }: { currentPlanId: string }) {
+  const isCurrent = currentPlanId === 'custom';
+
+  const [segment, setSegment] = useState<SegmentKey>('ecommerce');
+  const [selected, setSelected] = useState<Set<ModuleKey>>(
+    () => new Set<ModuleKey>([...SEGMENTS.ecommerce.modulosPadrao])
+  );
+
+  function handleSegmentChange(seg: SegmentKey) {
+    setSegment(seg);
+    setSelected(new Set<ModuleKey>([...SEGMENTS[seg].modulosPadrao]));
+  }
+
+  function toggle(key: ModuleKey) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const total = BASE_PRICE + selected.size * PRICE_PER_MODULE;
+
+  return (
+    <div
+      className={`card p-0 overflow-hidden ring-2 transition-all ${
+        isCurrent ? 'ring-violet-400' : 'ring-transparent'
+      }`}
+    >
+      {/* Header banner */}
+      <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/20 border-b border-white/[0.06] px-6 py-4 flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border bg-violet-500/10 text-violet-400 border-violet-500/20">
+              <Puzzle size={12} /> Monte do seu jeito
+            </span>
+            {isCurrent && (
+              <span className="text-xs text-violet-400 font-medium flex items-center gap-1">
+                <CheckCircle2 size={12} /> Plano atual
+              </span>
+            )}
+          </div>
+          <p className="text-slate-400 text-sm max-w-lg">
+            Escolha exatamente os módulos que você precisa. Pague só pelo que usar, sem módulos
+            desnecessários.
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <p className="text-3xl font-bold text-slate-100">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+          </p>
+          <p className="text-xs text-slate-500">
+            /mês · {selected.size} módulo{selected.size !== 1 ? 's' : ''}
+          </p>
+          <p className="text-[10px] text-slate-600 mt-0.5">
+            Base R$ {BASE_PRICE.toFixed(2).replace('.', ',')} + R${' '}
+            {PRICE_PER_MODULE.toFixed(2).replace('.', ',')}/módulo
+          </p>
+        </div>
+      </div>
+
+      <div className="p-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        {/* Left: configurações */}
+        <div className="space-y-5">
+          {/* Segmento */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              Começa como padrão de
+            </p>
+            <div className="grid grid-cols-1 gap-1">
+              {SEGMENT_OPTIONS.map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => handleSegmentChange(s.key)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-medium transition-colors ${
+                    segment === s.key
+                      ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                      : 'text-slate-400 hover:bg-white/[0.04] border border-transparent'
+                  }`}
+                >
+                  <span>{s.icon}</span>
+                  {s.label}
+                  {segment === s.key && <Check size={11} className="ml-auto text-violet-400" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Resumo de preço */}
+          <div className="bg-slate-800/50 rounded-xl p-4 space-y-2 border border-white/[0.04]">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Plataforma base</span>
+              <span className="text-slate-300">R$ {BASE_PRICE.toFixed(2).replace('.', ',')}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">
+                {selected.size} módulo{selected.size !== 1 ? 's' : ''} × R${' '}
+                {PRICE_PER_MODULE.toFixed(2).replace('.', ',')}
+              </span>
+              <span className="text-slate-300">
+                R$ {(selected.size * PRICE_PER_MODULE).toFixed(2).replace('.', ',')}
+              </span>
+            </div>
+            <div className="border-t border-white/[0.06] pt-2 flex justify-between">
+              <span className="text-xs font-semibold text-slate-300">Total</span>
+              <span className="text-sm font-bold text-violet-400">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                  total
+                )}
+                /mês
+              </span>
+            </div>
+          </div>
+
+          <button
+            disabled
+            title="Pagamentos em breve!"
+            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-violet-600 text-white opacity-60 cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isCurrent ? 'Plano atual' : 'Montar meu plano'}
+            {!isCurrent && <ArrowRight size={14} />}
+          </button>
+        </div>
+
+        {/* Right: seletor de módulos */}
+        <div className="space-y-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            Módulos selecionados ({selected.size})
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Object.entries(MODULE_GROUPS).map(([group, mods]) => (
+              <div key={group} className="space-y-1">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-600 px-1 mb-1.5">
+                  {group}
+                </p>
+                {mods.map((mod) => {
+                  const on = selected.has(mod.key);
+                  return (
+                    <button
+                      key={mod.key}
+                      onClick={() => toggle(mod.key)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${
+                        on
+                          ? 'bg-violet-500/10 border border-violet-500/20 text-slate-200'
+                          : 'bg-slate-800/40 border border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-800/80'
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                          on ? 'bg-violet-500' : 'bg-slate-700'
+                        }`}
+                      >
+                        {on && <Check size={10} className="text-white" />}
+                      </div>
+                      <span className="text-xs font-medium truncate">{mod.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PlanosContent() {
   const subscription = useStore((s) => s.subscription);
   const currentPlanId = subscription?.planId ?? 'free';
@@ -204,9 +398,9 @@ export function PlanosContent() {
         </p>
         {subscription && (
           <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${PLAN_STYLES[currentPlanId]?.badge ?? ''}`}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium ${PLAN_STYLES[currentPlanId]?.badge ?? 'bg-violet-50 text-violet-700 border-violet-200'}`}
           >
-            {PLAN_STYLES[currentPlanId]?.icon}
+            {PLAN_STYLES[currentPlanId]?.icon ?? <Puzzle size={14} />}
             Você está no plano <span className="font-semibold">{subscription.plan.nome}</span>
           </div>
         )}
@@ -239,9 +433,7 @@ export function PlanosContent() {
                     </span>
                   )}
                   {plan.destaque && !isCurrent && (
-                    <span className="text-xs text-core-green dark:text-core-green font-medium">
-                      Mais popular
-                    </span>
+                    <span className="text-xs text-core-green font-medium">Mais popular</span>
                   )}
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 text-xs">{plan.descricao}</p>
@@ -311,6 +503,9 @@ export function PlanosContent() {
         })}
       </div>
 
+      {/* Card "Monte do seu jeito" */}
+      <CustomPlanCard currentPlanId={currentPlanId} />
+
       {/* Feature comparison table */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
@@ -328,7 +523,7 @@ export function PlanosContent() {
                 {PLANS.map((p) => (
                   <th
                     key={p.id}
-                    className={`px-3 py-3 text-center font-semibold ${p.id === currentPlanId ? 'text-core-green dark:text-core-green' : 'text-slate-600 dark:text-slate-300'}`}
+                    className={`px-3 py-3 text-center font-semibold ${p.id === currentPlanId ? 'text-core-green' : 'text-slate-600 dark:text-slate-300'}`}
                   >
                     {p.nome}
                   </th>

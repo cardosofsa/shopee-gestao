@@ -9,8 +9,10 @@ interface Plan {
   id: string;
   nome: string;
   price_brl: number | null;
+  price_per_module: number | null;
   modules_included: string[] | null;
   active: boolean;
+  is_custom: boolean;
 }
 
 export default function AdminPlans() {
@@ -23,7 +25,7 @@ export default function AdminPlans() {
   useEffect(() => {
     supabase
       .from('plans')
-      .select('id, nome, price_brl, modules_included, active')
+      .select('id, nome, price_brl, price_per_module, modules_included, active, is_custom')
       .order('price_brl', { ascending: true })
       .then(({ data }) => {
         setPlans((data as Plan[]) ?? []);
@@ -49,6 +51,7 @@ export default function AdminPlans() {
       .update({
         nome: draft.nome,
         price_brl: draft.price_brl,
+        price_per_module: draft.price_per_module,
         modules_included: draft.modules_included,
         active: draft.active,
       })
@@ -111,8 +114,13 @@ export default function AdminPlans() {
                       className="w-full h-9 bg-slate-800 border border-white/[0.06] rounded-lg px-3 text-sm text-slate-100 focus:outline-none focus:border-core-green/40 font-semibold"
                     />
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-bold text-slate-100">{plan.nome}</h3>
+                      {plan.is_custom && (
+                        <span className="text-[10px] bg-violet-500/10 text-violet-400 border border-violet-500/20 px-1.5 py-0.5 rounded font-semibold">
+                          Personalizável
+                        </span>
+                      )}
                       {!plan.active && (
                         <span className="text-[10px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded border border-white/[0.06]">
                           Inativo
@@ -152,10 +160,10 @@ export default function AdminPlans() {
               </div>
 
               {/* Price + active */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">
-                    Preço (R$)
+                    Preço base (R$)
                   </span>
                   {isEditing ? (
                     <input
@@ -177,6 +185,33 @@ export default function AdminPlans() {
                     </span>
                   )}
                 </div>
+
+                {(plan.is_custom || isEditing) && (
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">
+                      Por módulo (R$)
+                    </span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={d.price_per_module ?? ''}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            price_per_module: parseFloat(e.target.value),
+                          }))
+                        }
+                        className="w-24 h-8 bg-slate-800 border border-white/[0.06] rounded-lg px-2 text-xs text-slate-100 focus:outline-none focus:border-core-green/40"
+                      />
+                    ) : (
+                      <span className="text-sm font-bold text-violet-400">
+                        {plan.price_per_module != null && plan.price_per_module > 0
+                          ? `+ ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(plan.price_per_module)}/módulo`
+                          : '—'}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {isEditing && (
                   <div>

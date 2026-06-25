@@ -1,4 +1,4 @@
-import { Activity, TrendingUp, Users, UserX } from 'lucide-react';
+import { Activity, DollarSign, TrendingDown, TrendingUp, Users, UserX } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
@@ -19,6 +19,13 @@ import { supabase } from '../../../lib/supabase';
 interface ModuleUsageRow {
   module_key: string;
   usage_count: number;
+}
+
+interface AdminMetrics {
+  mrr: number;
+  churn_count: number;
+  total_active: number;
+  arpu: number;
 }
 
 interface TenantRow {
@@ -89,12 +96,13 @@ export default function AdminDashboard() {
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [moduleUsage, setModuleUsage] = useState<ModuleUsageRow[]>([]);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [activeCount, setActiveCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [{ data: t }, { data: a }, { data: mu }] = await Promise.all([
+      const [{ data: t }, { data: a }, { data: mu }, { data: m }] = await Promise.all([
         supabase.rpc('get_admin_tenants'),
         supabase
           .from('admin_audit_log')
@@ -102,11 +110,13 @@ export default function AdminDashboard() {
           .order('created_at', { ascending: false })
           .limit(20),
         supabase.rpc('get_module_usage'),
+        supabase.rpc('get_admin_metrics'),
       ]);
       const rows = (t as TenantRow[]) ?? [];
       setTenants(rows);
       setAudit((a as AuditRow[]) ?? []);
       setModuleUsage((mu as ModuleUsageRow[]) ?? []);
+      setMetrics(m as AdminMetrics | null);
       const cutoff = new Date(Date.now() - 30 * 864e5).toISOString();
       setActiveCount(rows.filter((r) => r.last_sign_in_at && r.last_sign_in_at > cutoff).length);
       setLoading(false);
@@ -158,7 +168,7 @@ export default function AdminDashboard() {
         <p className="text-slate-500 text-sm mt-0.5">Visão geral da plataforma CORE</p>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — Assinantes */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KPICard label="Total de Assinantes" value={tenants.length} icon={Users} />
         <KPICard
@@ -179,6 +189,52 @@ export default function AdminDashboard() {
           icon={UserX}
           color="text-amber-400"
         />
+      </div>
+
+      {/* KPIs — Receita */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-slate-900 border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              MRR
+            </span>
+            <DollarSign size={14} className="text-core-green" />
+          </div>
+          <p className="text-2xl font-bold text-slate-100">
+            {metrics
+              ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                  metrics.mrr
+                )
+              : '—'}
+          </p>
+          <p className="text-[11px] text-slate-600 mt-1">Receita recorrente mensal</p>
+        </div>
+        <div className="bg-slate-900 border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Churn (30d)
+            </span>
+            <TrendingDown size={14} className="text-red-400" />
+          </div>
+          <p className="text-2xl font-bold text-slate-100">{metrics?.churn_count ?? '—'}</p>
+          <p className="text-[11px] text-slate-600 mt-1">Cancelamentos no último mês</p>
+        </div>
+        <div className="bg-slate-900 border border-white/[0.06] rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              ARPU
+            </span>
+            <TrendingUp size={14} className="text-violet-400" />
+          </div>
+          <p className="text-2xl font-bold text-slate-100">
+            {metrics
+              ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                  metrics.arpu
+                )
+              : '—'}
+          </p>
+          <p className="text-[11px] text-slate-600 mt-1">Receita média por assinante ativo</p>
+        </div>
       </div>
 
       {/* Charts */}
