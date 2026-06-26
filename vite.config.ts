@@ -39,6 +39,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        cleanupOutdatedCaches: true,
+        // SPA fallback: navegação vai pro index.html; assets JS/CSS vão pro cache
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//, /^\/functions\//, /\.js$/, /\.css$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -46,6 +50,7 @@ export default defineConfig({
             options: {
               cacheName: 'supabase-cache',
               expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              networkTimeoutSeconds: 10,
             },
           },
         ],
