@@ -1,5 +1,14 @@
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Factory, ShoppingCart, Store, Truck, Wrench } from 'lucide-react';
+import type { ComponentType } from 'react';
 import { useState } from 'react';
+
+const SEGMENT_ICONS: Record<string, ComponentType<{ size?: number; className?: string }>> = {
+  ShoppingCart,
+  Store,
+  Truck,
+  Wrench,
+  Factory,
+};
 
 import type { ModuleKey } from '../config/modules';
 import { MODULE_CATALOG } from '../config/modules';
@@ -117,7 +126,15 @@ export function OnboardingWizard({ userId, onComplete }: Props) {
                         : 'bg-slate-900 border-white/[0.06] text-slate-300 hover:border-white/[0.12]'
                     }`}
                   >
-                    <span className="text-2xl">{seg.icon}</span>
+                    {(() => {
+                      const Icon = SEGMENT_ICONS[seg.icon];
+                      return Icon ? (
+                        <Icon
+                          size={22}
+                          className={segment === key ? 'text-core-green' : 'text-slate-400'}
+                        />
+                      ) : null;
+                    })()}
                     <div>
                       <p className="text-sm font-semibold">{seg.label}</p>
                       <p className="text-xs text-slate-500">{seg.description}</p>
