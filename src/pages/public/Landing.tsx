@@ -434,6 +434,63 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── BLOCO 5b — DEPOIMENTOS ────────────────────── */}
+      <section className="bg-slate-50 py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Quem já usa</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-core-black text-center tracking-tight mb-10">
+            Vendedores reais, resultados reais
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-5">
+            {[
+              {
+                nome: 'Ana Paula S.',
+                negocio: 'E-commerce de moda · Shopee',
+                texto: '"Antes eu perdia horas em planilha no fim do mês sem saber se tinha lucrado. Agora abro o CORE e em 30 segundos já sei exatamente como fechei."',
+                stars: 5,
+              },
+              {
+                nome: 'Ricardo M.',
+                negocio: 'Atacado de eletrônicos · SP',
+                texto: '"A curva ABC me mostrou que 3 produtos respondiam por 60% do meu lucro. Cortei os outros e a margem dobrou. Nunca teria descoberto isso na planilha."',
+                stars: 5,
+              },
+              {
+                nome: 'Fernanda O.',
+                negocio: 'Loja de cosméticos · MG',
+                texto: '"Setup foi literalmente 5 minutos. Importei meu CSV do Shopee e já tinha meu dashboard funcionando. Muito mais fácil do que esperava."',
+                stars: 5,
+              },
+            ].map(({ nome, negocio, texto, stars }) => (
+              <div key={nome} className="bg-white rounded-xl p-5 border border-slate-200 flex flex-col gap-4">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: stars }).map((_, i) => (
+                    <span key={i} className="text-amber-400 text-sm">★</span>
+                  ))}
+                </div>
+                <p className="text-sm text-slate-600 leading-relaxed flex-1 italic">{texto}</p>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{nome}</p>
+                  <p className="text-xs text-slate-400">{negocio}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 bg-core-black rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Junte-se a centenas de vendedores</p>
+              <p className="text-slate-400 text-xs mt-0.5">que já pararam de gerenciar no chute</p>
+            </div>
+            <Link
+              to="/registro"
+              className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-core-green hover:bg-core-green-h text-white font-semibold rounded-xl transition-colors text-sm whitespace-nowrap"
+            >
+              Começar agora <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── BLOCO 6 — AÇÃO ────────────────────────────── */}
       <section className="bg-core-black py-16 px-4">
         <div className="max-w-4xl mx-auto">

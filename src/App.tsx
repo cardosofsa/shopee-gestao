@@ -53,6 +53,7 @@ const MapaCalor = lazy(() => import('./pages/MapaCalor'));
 const Categorias = lazy(() => import('./pages/Categorias'));
 const ComparativoAnual = lazy(() => import('./pages/ComparativoAnual'));
 const Exportar = lazy(() => import('./pages/Exportar'));
+const OrdensServico = lazy(() => import('./modules/ordens_servico/pages/OrdensServico'));
 
 const AdminLayout = lazy(() => import('./modules/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./modules/admin/pages/AdminDashboard'));
@@ -197,6 +198,7 @@ function AppOrPublic() {
         <Route path="configs" element={page(Configs, 'Configurações')} />
         <Route path="planos" element={page(Planos, 'Planos')} />
         <Route path="equipe" element={page(Equipe, 'Equipe')} />
+        <Route path="os" element={mpage(OrdensServico, 'Ordens de Serviço', 'ordens_servico')} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

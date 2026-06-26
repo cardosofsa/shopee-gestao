@@ -1,12 +1,15 @@
 import {
   CalendarCheck,
   CheckCircle2,
+  Copy,
   Crown,
   Download,
+  Gift,
   Link2,
   Link2Off,
   Plus,
   RotateCcw,
+  Share2,
   Store,
   Tag,
   Trash2,
@@ -20,12 +23,98 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { LimparDadosModal } from '../../../components/LimparDadosModal';
 import { useToast } from '../../../components/Toast';
+import { useAuth } from '../../../contexts/AuthContext';
 import { connectGoogleCalendar, downloadICS, getCalendarToken } from '../../../lib/gcal';
 import { supabase } from '../../../lib/supabase';
 import { PlanosContent } from '../../../pages/Planos';
 import { useStore } from '../../../store';
 import type { Configuracoes } from '../../../types';
 import { fmt } from '../../../utils/calculations';
+
+function ReferralCard() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [code, setCode] = useState<string | null>(null);
+  const [usedCount, setUsedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('get_or_create_referral_code').then(({ data }) => {
+      if (data) {
+        setCode(data as string);
+        supabase
+          .from('referral_codes')
+          .select('used_count')
+          .eq('user_id', user.id)
+          .single()
+          .then(({ data: row }) => {
+            if (row) setUsedCount(row.used_count as number);
+          });
+      }
+      setLoading(false);
+    });
+  }, [user]);
+
+  function copyCode() {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    toast('Código copiado!', 'success');
+  }
+
+  function shareWhatsApp() {
+    if (!code) return;
+    const msg = encodeURIComponent(
+      `Use meu código *${code}* no CORE e ganhe 1 mês grátis! 🚀 Crie sua conta em https://coregestao.com.br/registro`
+    );
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  }
+
+  return (
+    <div className="card p-5 border border-violet-100 dark:border-violet-900/30">
+      <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm mb-1 flex items-center gap-2">
+        <Gift size={15} className="text-violet-500" /> Indique um amigo
+      </h2>
+      <p className="text-slate-500 dark:text-slate-400 text-xs mb-4">
+        Compartilhe seu código. Quando um amigo criar a conta usando ele,{' '}
+        <strong className="text-slate-700 dark:text-slate-200">
+          você e ele ganham 1 mês grátis
+        </strong>
+        .
+      </p>
+      {loading ? (
+        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center h-10 bg-slate-100 dark:bg-slate-800 rounded-lg px-4 border border-slate-200 dark:border-white/[0.06]">
+              <span className="font-mono font-bold text-lg tracking-[0.2em] text-slate-800 dark:text-slate-100">
+                {code ?? '—'}
+              </span>
+            </div>
+            <button
+              onClick={copyCode}
+              className="h-10 px-3 flex items-center gap-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              <Copy size={13} /> Copiar
+            </button>
+            <button
+              onClick={shareWhatsApp}
+              className="h-10 px-3 flex items-center gap-1.5 text-xs font-medium bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/30 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg transition-colors"
+            >
+              <Share2 size={13} /> WhatsApp
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <Users size={11} />
+            <strong className="text-slate-700 dark:text-slate-300">{usedCount}</strong>
+            {usedCount === 1 ? ' amigo cadastrou' : ' amigos cadastraram'} com seu código
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Configs() {
   const toast = useToast();
@@ -942,6 +1031,9 @@ export default function Configs() {
             <Crown size={14} /> Ver planos e fazer upgrade
           </button>
         </div>
+
+        {/* Indique um amigo */}
+        <ReferralCard />
 
         {/* Danger Zone */}
         <div className="card p-5 border border-red-100 dark:border-red-900/50">
