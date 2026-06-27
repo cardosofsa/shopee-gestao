@@ -586,7 +586,30 @@ export default function Vendas() {
   }, [handleKeyboard]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const skusDisponiveis = useMemo(() => [...new Set(pedidos.map((p) => p.sku))].sort(), [pedidos]);
+
+  // Recalcula custos/lucros com base no preço atual do produto (imune a re-fetch do RQ)
+  const pedidosComCusto = useMemo(() => {
+    const prodMap = new Map(produtos.map((p) => [p.sku, p.custoUnitario]));
+    return pedidos.map((p) => {
+      const cuUnit = prodMap.get(p.sku);
+      if (cuUnit === undefined) return p;
+      const custoTotal = cuUnit * p.unidadesEstoque;
+      const lucroOperacional =
+        p.receita - p.desconto - custoTotal - p.taxaShopee - p.dasImposto - p.adsMarketing;
+      return {
+        ...p,
+        custoTotal,
+        lucroOperacional,
+        margemSCustoProduto: custoTotal > 0 ? (lucroOperacional / custoTotal) * 100 : 0,
+        margemSCustoTotal: p.receita > 0 ? (lucroOperacional / p.receita) * 100 : 0,
+      };
+    });
+  }, [pedidos, produtos]);
+
+  const skusDisponiveis = useMemo(
+    () => [...new Set(pedidosComCusto.map((p) => p.sku))].sort(),
+    [pedidosComCusto]
+  );
 
   const lojasDisponiveis = useMemo(() => {
     const set = new Set([...produtos.map((p) => p.loja), ...configuracoes.lojas]);
@@ -595,7 +618,7 @@ export default function Vendas() {
 
   const filtrados = useMemo(() => {
     const q = search.toLowerCase();
-    return pedidos
+    return pedidosComCusto
       .filter((p) => {
         if (hiddenIds.has(p.id)) return false;
         if (filters.dateFrom && p.data < filters.dateFrom) return false;
@@ -622,7 +645,7 @@ export default function Vendas() {
           ? String(va).localeCompare(String(vb))
           : String(vb).localeCompare(String(va));
       });
-  }, [pedidos, search, filters, sortCol, sortDir, hiddenIds]);
+  }, [pedidosComCusto, search, filters, sortCol, sortDir, hiddenIds]);
 
   const comparativo = useMemo(() => {
     if (!filters.dateFrom || !filters.dateTo) return null;
@@ -633,14 +656,14 @@ export default function Vendas() {
     const prevFrom = new Date(prevTo.getTime() - diffMs);
     const prevFromStr = prevFrom.toISOString().slice(0, 10);
     const prevToStr = prevTo.toISOString().slice(0, 10);
-    const prev = pedidos.filter((p) => p.data >= prevFromStr && p.data <= prevToStr);
+    const prev = pedidosComCusto.filter((p) => p.data >= prevFromStr && p.data <= prevToStr);
     return {
       receita: prev.reduce((s, p) => s + p.receita, 0),
       lucro: prev.reduce((s, p) => s + p.lucroOperacional, 0),
       pedidos: prev.length,
       label: `${prevFromStr} → ${prevToStr}`,
     };
-  }, [filters.dateFrom, filters.dateTo, pedidos]);
+  }, [filters.dateFrom, filters.dateTo, pedidosComCusto]);
 
   const totais = useMemo(
     () => ({
