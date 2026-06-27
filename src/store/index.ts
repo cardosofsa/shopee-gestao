@@ -604,18 +604,22 @@ export const useStore = create<AppState>()(
       },
       deleteProduto: (sku) => {
         const { pedidos, compras } = get();
-        const temPedidos = pedidos.some((p) => p.sku === sku);
-        const temCompras = compras.some((c) => c.sku === sku);
-        if (temPedidos || temCompras) {
-          const origem = [temPedidos && 'pedidos', temCompras && 'compras']
-            .filter(Boolean)
-            .join(' e ');
-          notifySyncError(`Não é possível excluir: o produto possui ${origem} vinculados.`);
-          return;
-        }
-        set((s) => ({ produtos: s.produtos.filter((p) => p.sku !== sku) }));
+        const pedidosIds = pedidos.filter((p) => p.sku === sku).map((p) => p.id);
+        const comprasIds = compras.filter((c) => c.sku === sku).map((c) => c.id);
+        set((s) => ({
+          produtos: s.produtos.filter((p) => p.sku !== sku),
+          pedidos: s.pedidos.filter((p) => p.sku !== sku),
+          compras: s.compras.filter((c) => c.sku !== sku),
+        }));
         const uid = get().userId;
-        if (uid) withRetry(() => dbProdutos.delete(sku, uid), 'produto').catch(syncFail('produto'));
+        if (uid) {
+          const ops: Promise<void>[] = [
+            withRetry(() => dbProdutos.delete(sku, uid), 'produto'),
+            ...pedidosIds.map((id) => withRetry(() => dbPedidos.delete(id, uid), 'pedido')),
+            ...comprasIds.map((id) => withRetry(() => dbCompras.delete(id, uid), 'compra')),
+          ];
+          Promise.all(ops).catch(syncFail('produto'));
+        }
       },
       updateEstoque: (sku, delta) => {
         const cur = get().produtos.find((p) => p.sku === sku);

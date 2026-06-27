@@ -938,7 +938,6 @@ function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }
   const pedidos = useStore((s) => s.pedidos);
   const updateProduto = useStore((s) => s.updateProduto);
   const deleteProduto = useStore((s) => s.deleteProduto);
-  const deletePedidos = useStore((s) => s.deletePedidos);
   const configuracoes = useStore((s) => s.configuracoes);
 
   const prod = produtos.find((p) => p.sku === sku);
@@ -973,12 +972,8 @@ function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }
   };
 
   const confirmDelete = () => {
-    deletePedidos(pedidosSku.map((p) => p.id));
     deleteProduto(sku);
-    toast(
-      `SKU ${sku} e ${pedidosSku.length} pedido${pedidosSku.length !== 1 ? 's' : ''} excluídos.`,
-      'info'
-    );
+    toast(`SKU ${sku} excluído.`, 'info');
     onClose();
   };
 
@@ -1177,7 +1172,6 @@ export default function Estoque() {
   );
   const deleteCompra = useStore((s) => s.deleteCompra);
   const deleteProduto = useStore((s) => s.deleteProduto);
-  const deletePedidos = useStore((s) => s.deletePedidos);
   const tarefas = useStore((s) => s.tarefas);
   const addTarefa = useStore((s) => s.addTarefa);
 
@@ -1425,7 +1419,6 @@ export default function Estoque() {
                   <button
                     className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm"
                     onClick={() => {
-                      if (pedidosSku.length > 0) deletePedidos(pedidosSku.map((p) => p.id));
                       deleteProduto(deleteProdutoSku);
                       toast(`SKU ${deleteProdutoSku} excluído.`, 'info');
                       setDeleteProdutoSku(null);

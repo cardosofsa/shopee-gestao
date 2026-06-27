@@ -369,7 +369,7 @@ export function PosicaoTab({
           </div>
 
           <div className="card overflow-hidden">
-            <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-520px)]">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
                   <tr>
@@ -384,7 +384,7 @@ export function PosicaoTab({
                     <SortTh col="diasCobertura" label="Cobertura" />
                     <SortTh col="ptReposicao" label="Pt. Reposição" />
                     <SortTh col="status" label="Status" />
-                    <th className="px-3 py-3" />
+                    <th className="px-3 py-3 sticky right-0 bg-slate-50 dark:bg-slate-800" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -434,7 +434,7 @@ export function PosicaoTab({
                         <td className="px-3 py-3">
                           <StatusBadge status={p.status} />
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3 sticky right-0 bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-700/50">
                           <div className="flex items-center gap-2">
                             <Link
                               to={`/estoque/${p.sku}`}
