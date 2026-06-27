@@ -371,9 +371,9 @@ export const useStore = create<AppState>()(
 
       hydrate: (data) =>
         set({
-          produtos: data.produtos.length > 0 ? data.produtos : PRODUTOS_SEED,
+          produtos: data.produtos,
           pedidos: data.pedidos,
-          compras: data.compras.length > 0 ? data.compras : COMPRAS_SEED,
+          compras: data.compras,
           despesas: data.despesas,
           tarefas: data.tarefas.length > 0 ? data.tarefas : TAREFAS_SEED,
           historico: data.historico,

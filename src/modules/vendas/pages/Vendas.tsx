@@ -467,6 +467,7 @@ export default function Vendas() {
   const configuracoes = useStore((s) => s.configuracoes);
   const userId = useStore((s) => s.userId);
   const addPedido = useStore((s) => s.addPedido);
+  const addProduto = useStore((s) => s.addProduto);
   const updatePedido = useStore((s) => s.updatePedido);
   const deletePedido = useStore((s) => s.deletePedido);
   const updatePedidosStatus = useStore((s) => s.updatePedidosStatus);
@@ -846,7 +847,31 @@ export default function Vendas() {
     const { novos, duplicados, formato, lojaCustom } = pendingImport;
     const final = lojaCustom ? novos.map((p) => ({ ...p, loja: lojaCustom })) : novos;
     importPedidos(final);
+
+    // Auto-criar produtos para SKUs novos que ainda não existem no catálogo
+    const skusExistentes = new Set(produtos.map((p) => p.sku));
+    const novosProdutos = new Map<string, (typeof final)[0]>();
+    for (const pedido of final) {
+      if (!skusExistentes.has(pedido.sku) && !novosProdutos.has(pedido.sku)) {
+        novosProdutos.set(pedido.sku, pedido);
+      }
+    }
+    for (const [sku, pedido] of novosProdutos) {
+      addProduto({
+        sku,
+        nome: pedido.produto || sku,
+        categoria: '',
+        loja: pedido.loja || 'Ambas',
+        custoUnitario: 0,
+        estoqueSeguranca: 0,
+        estoqueAtual: 0,
+        ativo: true,
+      });
+    }
+
     toast(`${final.length} pedido(s) importado(s) com sucesso!`, 'success');
+    if (novosProdutos.size > 0)
+      toast(`${novosProdutos.size} produto(s) criado(s) automaticamente no Estoque.`, 'info');
     if (duplicados > 0) toast(`${duplicados} duplicado(s) ignorado(s).`, 'info');
     if (userId) {
       dbImportacoes

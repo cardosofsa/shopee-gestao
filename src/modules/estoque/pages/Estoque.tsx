@@ -1176,6 +1176,8 @@ export default function Estoque() {
     [produtosAll, lojaFiltro]
   );
   const deleteCompra = useStore((s) => s.deleteCompra);
+  const deleteProduto = useStore((s) => s.deleteProduto);
+  const deletePedidos = useStore((s) => s.deletePedidos);
   const tarefas = useStore((s) => s.tarefas);
   const addTarefa = useStore((s) => s.addTarefa);
 
@@ -1185,6 +1187,7 @@ export default function Estoque() {
   const [showAddProduto, setShowAddProduto] = useState(false);
   const [showAjuste, setShowAjuste] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteProdutoSku, setDeleteProdutoSku] = useState<string | null>(null);
   const [editCompra, setEditCompra] = useState<Compra | null>(null);
   const [editProdutoSku, setEditProdutoSku] = useState<string | null>(null);
 
@@ -1360,6 +1363,7 @@ export default function Estoque() {
           coberturaMedia={coberturaMedia}
           produtosCount={produtos.length}
           onEditProduto={setEditProdutoSku}
+          onDeleteProduto={setDeleteProdutoSku}
           onAjuste={() => setShowAjuste(true)}
         />
       )}
@@ -1388,6 +1392,52 @@ export default function Estoque() {
           onCancel={() => setDeleteId(null)}
         />
       )}
+      {deleteProdutoSku &&
+        (() => {
+          const pedidosSku = pedidos.filter((p) => p.sku === deleteProdutoSku);
+          return (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm">
+                <div className="px-6 py-5 text-center">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Trash2 size={20} className="text-red-500" />
+                  </div>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    Excluir <span className="font-mono">{deleteProdutoSku}</span>?
+                  </h3>
+                  {pedidosSku.length > 0 && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {pedidosSku.length} pedido{pedidosSku.length !== 1 ? 's' : ''} vinculado
+                      {pedidosSku.length !== 1 ? 's' : ''} também serão excluídos.
+                    </p>
+                  )}
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    Esta ação não pode ser desfeita.
+                  </p>
+                </div>
+                <div className="px-6 pb-5 flex gap-3">
+                  <button
+                    className="btn-secondary flex-1 justify-center"
+                    onClick={() => setDeleteProdutoSku(null)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm"
+                    onClick={() => {
+                      if (pedidosSku.length > 0) deletePedidos(pedidosSku.map((p) => p.id));
+                      deleteProduto(deleteProdutoSku);
+                      toast(`SKU ${deleteProdutoSku} excluído.`, 'info');
+                      setDeleteProdutoSku(null);
+                    }}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }

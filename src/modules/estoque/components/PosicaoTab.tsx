@@ -6,6 +6,7 @@ import {
   Package,
   Pencil,
   Search,
+  Trash2,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -133,6 +134,7 @@ interface PosicaoTabProps {
   coberturaMedia: number | null;
   produtosCount: number;
   onEditProduto: (sku: string) => void;
+  onDeleteProduto: (sku: string) => void;
   onAjuste: () => void;
 }
 
@@ -146,6 +148,7 @@ export function PosicaoTab({
   coberturaMedia,
   produtosCount,
   onEditProduto,
+  onDeleteProduto,
   onAjuste,
 }: PosicaoTabProps) {
   const [posSearch, setPosSearch] = useState('');
@@ -453,6 +456,13 @@ export function PosicaoTab({
                               title="Ajustar estoque"
                             >
                               <Package size={13} />
+                            </button>
+                            <button
+                              onClick={() => onDeleteProduto(p.sku)}
+                              className="text-slate-300 hover:text-red-400 transition-colors"
+                              title="Excluir produto"
+                            >
+                              <Trash2 size={13} />
                             </button>
                           </div>
                         </td>
