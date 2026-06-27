@@ -10,7 +10,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = 'CORE Financeiro <financeiro@coregestao.com.br>';
+// Troque pelo seu domínio verificado quando disponível (ex: financeiro@coregestor.com.br)
+const FROM = Deno.env.get('RESEND_FROM') ?? 'CORE Financeiro <onboarding@resend.dev>';
 
 interface InvoicePayload {
   user_email: string;

@@ -12,7 +12,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
-const FROM = 'CORE <noreply@coregestao.com.br>';
+// Troque pelo seu domínio verificado quando disponível (ex: noreply@coregestor.com.br)
+const FROM = Deno.env.get('RESEND_FROM') ?? 'CORE <onboarding@resend.dev>';
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://coregestao.com.br';
 
 serve(async (req) => {

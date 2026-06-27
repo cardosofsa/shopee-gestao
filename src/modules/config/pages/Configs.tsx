@@ -286,7 +286,7 @@ export default function Configs() {
 
   return (
     <>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Configurações</h1>

@@ -935,7 +935,10 @@ function AddProdutoModal({ onClose }: { onClose: () => void }) {
 function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }) {
   const toast = useToast();
   const produtos = useStore((s) => s.produtos);
+  const pedidos = useStore((s) => s.pedidos);
   const updateProduto = useStore((s) => s.updateProduto);
+  const deleteProduto = useStore((s) => s.deleteProduto);
+  const deletePedidos = useStore((s) => s.deletePedidos);
   const configuracoes = useStore((s) => s.configuracoes);
 
   const prod = produtos.find((p) => p.sku === sku);
@@ -947,8 +950,11 @@ function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }
     loja: prod?.loja ?? configuracoes.lojas[0] ?? 'Ambas',
     ativo: prod?.ativo ?? true,
   });
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
 
   if (!prod) return null;
+
+  const pedidosSku = pedidos.filter((p) => p.sku === sku);
 
   const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const val =
@@ -963,6 +969,16 @@ function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }
   const save = () => {
     updateProduto(sku, form);
     toast(`${sku} atualizado.`, 'success');
+    onClose();
+  };
+
+  const confirmDelete = () => {
+    deletePedidos(pedidosSku.map((p) => p.id));
+    deleteProduto(sku);
+    toast(
+      `SKU ${sku} e ${pedidosSku.length} pedido${pedidosSku.length !== 1 ? 's' : ''} excluídos.`,
+      'info'
+    );
     onClose();
   };
 
@@ -981,77 +997,164 @@ function EditProdutoModal({ sku, onClose }: { sku: string; onClose: () => void }
             <X size={18} />
           </button>
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Nome</label>
-            <input className="input" value={form.nome} onChange={f('nome')} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
-                Categoria
-              </label>
-              <input className="input" value={form.categoria} onChange={f('categoria')} />
+
+        {/* Delete confirmation step 1 */}
+        {deleteStep === 1 && (
+          <div className="p-6 space-y-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                Excluir SKU {sku}?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-300">
+                Este SKU possui{' '}
+                <span className="font-bold">
+                  {pedidosSku.length} pedido{pedidosSku.length !== 1 ? 's' : ''}
+                </span>{' '}
+                vinculado{pedidosSku.length !== 1 ? 's' : ''}. Ao excluir o SKU, todos esses pedidos
+                também serão removidos permanentemente.
+              </p>
+              {pedidosSku.length === 0 && (
+                <p className="text-sm text-red-600 dark:text-red-300">
+                  Nenhum pedido está vinculado a este SKU.
+                </p>
+              )}
             </div>
-            <div>
-              <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Loja</label>
-              <select className="select" value={form.loja} onChange={f('loja')}>
-                {[...configuracoes.lojas, 'Ambas'].map((l) => (
-                  <option key={l}>{l}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
-                Custo Unitário (R$)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                className="input"
-                value={form.custoUnitario}
-                onChange={f('custoUnitario')}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
-                Estoque de Segurança
-              </label>
-              <input
-                type="number"
-                min={0}
-                className="input"
-                value={form.estoqueSeguranca}
-                onChange={f('estoqueSeguranca')}
-              />
+            <div className="flex gap-2">
+              <button className="btn-secondary flex-1" onClick={() => setDeleteStep(0)}>
+                Voltar
+              </button>
+              <button
+                onClick={() => setDeleteStep(2)}
+                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm"
+              >
+                Continuar
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3">
-            <input
-              type="checkbox"
-              id="ativo"
-              checked={form.ativo}
-              onChange={f('ativo')}
-              className="w-4 h-4 accent-[#18B37A]"
-            />
-            <label
-              htmlFor="ativo"
-              className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
-            >
-              Produto ativo
-            </label>
+        )}
+
+        {/* Delete confirmation step 2 — final */}
+        {deleteStep === 2 && (
+          <div className="p-6 space-y-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 space-y-2">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                Tem certeza absoluta?
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-300">
+                Esta ação é <span className="font-bold">irreversível</span>. O SKU{' '}
+                <span className="font-mono font-bold">{sku}</span>
+                {pedidosSku.length > 0 && (
+                  <>
+                    {' '}
+                    e seus <span className="font-bold">{pedidosSku.length} pedidos</span>
+                  </>
+                )}{' '}
+                serão excluídos permanentemente do sistema.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button className="btn-secondary flex-1" onClick={() => setDeleteStep(0)}>
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                Excluir definitivamente
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="btn-primary" onClick={save}>
-            Salvar
-          </button>
-        </div>
+        )}
+
+        {/* Normal edit form */}
+        {deleteStep === 0 && (
+          <>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                  Nome
+                </label>
+                <input className="input" value={form.nome} onChange={f('nome')} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    Categoria
+                  </label>
+                  <input className="input" value={form.categoria} onChange={f('categoria')} />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    Loja
+                  </label>
+                  <select className="select" value={form.loja} onChange={f('loja')}>
+                    {[...configuracoes.lojas, 'Ambas'].map((l) => (
+                      <option key={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    Custo Unitário (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input"
+                    value={form.custoUnitario}
+                    onChange={f('custoUnitario')}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">
+                    Estoque de Segurança
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="input"
+                    value={form.estoqueSeguranca}
+                    onChange={f('estoqueSeguranca')}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3">
+                <input
+                  type="checkbox"
+                  id="ativo"
+                  checked={form.ativo}
+                  onChange={f('ativo')}
+                  className="w-4 h-4 accent-[#18B37A]"
+                />
+                <label
+                  htmlFor="ativo"
+                  className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
+                >
+                  Produto ativo
+                </label>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setDeleteStep(1)}
+                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 transition-colors"
+              >
+                <Trash2 size={14} />
+                Excluir SKU
+              </button>
+              <div className="flex gap-2">
+                <button className="btn-secondary" onClick={onClose}>
+                  Cancelar
+                </button>
+                <button className="btn-primary" onClick={save}>
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1203,7 +1306,7 @@ export default function Estoque() {
 
   // ── JSX ────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

@@ -123,6 +123,13 @@ $$;
 
 -- ── Realtime para tenant_modules (GAP-04) ─────────────────────────────────────
 -- Permite que TenantContext receba updates em tempo real ao ser editado pelo admin.
-alter publication supabase_realtime add table public.tenant_modules;
+-- DO block ignora 42710 (already member) para que a migration seja idempotente.
+do $$
+begin
+  alter publication supabase_realtime add table public.tenant_modules;
+exception when duplicate_object then
+  null; -- já estava na publication, tudo certo
+end;
+$$;
 
 commit;

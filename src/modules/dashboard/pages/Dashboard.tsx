@@ -773,7 +773,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <Onboarding />
       {/* Header — greeting + today KPIs */}
       <div className="flex items-center gap-4 flex-wrap">

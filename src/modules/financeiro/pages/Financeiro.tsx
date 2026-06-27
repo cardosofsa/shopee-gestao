@@ -257,7 +257,7 @@ function HistoricoForm({
               onChange={f('despesasOperacionais')}
             />
           </div>
-          <div className="col-span-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 grid grid-cols-4 gap-3 text-sm">
+          <div className="col-span-2 bg-slate-50 dark:bg-slate-700/50 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div>
               <p className="text-slate-400 text-xs mb-0.5">Lucro Bruto</p>
               <p className="font-bold text-slate-800 dark:text-slate-100">{fmt(lucroBruto)}</p>
@@ -832,7 +832,7 @@ export default function Financeiro() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Modal fullscreen: DRE */}
       {showDRE && (
         <div

@@ -670,7 +670,7 @@ export default function Campanhas() {
     `px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${active ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`;
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       {/* Tab nav */}
       <div className="flex gap-1 bg-slate-100 dark:bg-slate-700/50 rounded-lg p-1 w-fit">
         <button onClick={() => setTab('campanhas')} className={TAB_CLS(tab === 'campanhas')}>

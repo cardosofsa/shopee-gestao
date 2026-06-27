@@ -895,7 +895,7 @@ export default function Vendas() {
 
   // ── JSX ────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 md:p-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -1071,39 +1071,53 @@ export default function Vendas() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="card p-4">
-          <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Pedidos filtrados</p>
-          <div className="flex items-center">
-            <p className="text-slate-900 dark:text-slate-100 font-bold text-xl">{totais.count}</p>
+      <div className="grid grid-cols-3 gap-2 md:gap-3">
+        <div className="card p-3 md:p-4">
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs mb-1 truncate">
+            Pedidos filtrados
+          </p>
+          <div className="flex items-center flex-wrap gap-x-1">
+            <p className="text-slate-900 dark:text-slate-100 font-bold text-base md:text-xl">
+              {totais.count}
+            </p>
             {comparativo && <DeltaBadge current={totais.count} previous={comparativo.pedidos} />}
           </div>
           {comparativo && (
-            <p className="text-slate-400 text-[10px] mt-0.5">vs. {comparativo.label}</p>
+            <p className="text-slate-400 text-[10px] mt-0.5 hidden sm:block">
+              vs. {comparativo.label}
+            </p>
           )}
         </div>
-        <div className="card p-4">
-          <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Receita</p>
-          <div className="flex items-center">
-            <p className="text-core-green font-bold text-xl">{fmt(totais.receita)}</p>
+        <div className="card p-3 md:p-4">
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs mb-1">Receita</p>
+          <div className="flex items-center flex-wrap gap-x-1">
+            <p className="text-core-green font-bold text-base md:text-xl truncate">
+              {fmt(totais.receita)}
+            </p>
             {comparativo && <DeltaBadge current={totais.receita} previous={comparativo.receita} />}
           </div>
           {comparativo && (
-            <p className="text-slate-400 text-[10px] mt-0.5">ant.: {fmt(comparativo.receita)}</p>
+            <p className="text-slate-400 text-[10px] mt-0.5 hidden sm:block">
+              ant.: {fmt(comparativo.receita)}
+            </p>
           )}
         </div>
-        <div className="card p-4">
-          <p className="text-slate-500 dark:text-slate-400 text-xs mb-1">Lucro Operacional</p>
-          <div className="flex items-center">
+        <div className="card p-3 md:p-4">
+          <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs mb-1">
+            Lucro Op.
+          </p>
+          <div className="flex items-center flex-wrap gap-x-1">
             <p
-              className={`font-bold text-xl ${totais.lucro >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
+              className={`font-bold text-base md:text-xl truncate ${totais.lucro >= 0 ? 'text-emerald-600' : 'text-red-500'}`}
             >
               {fmt(totais.lucro)}
             </p>
             {comparativo && <DeltaBadge current={totais.lucro} previous={comparativo.lucro} />}
           </div>
           {comparativo && (
-            <p className="text-slate-400 text-[10px] mt-0.5">ant.: {fmt(comparativo.lucro)}</p>
+            <p className="text-slate-400 text-[10px] mt-0.5 hidden sm:block">
+              ant.: {fmt(comparativo.lucro)}
+            </p>
           )}
         </div>
       </div>
