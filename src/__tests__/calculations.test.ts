@@ -243,10 +243,13 @@ describe('getKPIsMes', () => {
     expect(kpis.ticket).toBe(150);
   });
 
-  it('lucroLiquido é lucroOp menos DAS', () => {
+  it('lucroLiquido é lucroOp sem despesas externas (DAS já em pedido.lucroOperacional)', () => {
     const kpis = getKPIsMes(pedidos, '2025-06');
     expect(kpis.lucroOp).toBe(90);
-    expect(kpis.lucroLiquido).toBe(75); // 90 - 15
+    expect(kpis.lucroLiquido).toBe(90); // sem despesasExternas passadas
+    // com despesas externas o lucroLiquido deduz corretamente
+    const kpisComDesp = getKPIsMes(pedidos, '2025-06', 15);
+    expect(kpisComDesp.lucroLiquido).toBe(75); // 90 - 15
   });
 
   it('não inclui pedidos de outros meses', () => {
