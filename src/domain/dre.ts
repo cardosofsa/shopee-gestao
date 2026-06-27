@@ -3,6 +3,8 @@ import type { Despesa, Pedido } from '../types';
 export interface DREResult {
   mesAno: string;
   faturamentoBruto: number;
+  descontos: number;
+  receitaLiquida: number;
   pedidosQtd: number;
   ticketMedio: number;
   unidadesVendidas: number;
@@ -23,6 +25,8 @@ export function computeDRE(pedidos: Pedido[], despesas: Despesa[], mesAno: strin
   );
 
   const faturamentoBruto = doMes.reduce((s, p) => s + p.receita, 0);
+  const descontos = doMes.reduce((s, p) => s + p.desconto, 0);
+  const receitaLiquida = faturamentoBruto - descontos;
   const cmv = doMes.reduce((s, p) => s + p.custoTotal, 0);
   const taxasShopee = doMes.reduce((s, p) => s + p.taxaShopee, 0);
   const marketingAds = doMes.reduce((s, p) => s + p.adsMarketing, 0);
@@ -31,7 +35,7 @@ export function computeDRE(pedidos: Pedido[], despesas: Despesa[], mesAno: strin
     .filter((d) => d.data.startsWith(mesAno))
     .reduce((s, d) => s + d.valor, 0);
 
-  const lucroBruto = faturamentoBruto - cmv;
+  const lucroBruto = receitaLiquida - cmv;
   const lucroOperacional = lucroBruto - taxasShopee - marketingAds;
   const lucroLiquido = lucroOperacional - dasImposto - despesasOperacionais;
   const margemPercentual = faturamentoBruto > 0 ? (lucroLiquido / faturamentoBruto) * 100 : 0;
@@ -42,6 +46,8 @@ export function computeDRE(pedidos: Pedido[], despesas: Despesa[], mesAno: strin
   return {
     mesAno,
     faturamentoBruto,
+    descontos,
+    receitaLiquida,
     pedidosQtd,
     ticketMedio,
     unidadesVendidas,

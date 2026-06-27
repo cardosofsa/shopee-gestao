@@ -54,7 +54,8 @@ const monthShort = (mesAno: string) =>
 function calcLucros(
   f: Omit<HistoricoMensal, 'lucroBruto' | 'lucroOperacional' | 'lucroLiquido' | 'margemPercentual'>
 ) {
-  const lucroBruto = f.faturamentoBruto - f.cmv;
+  const receitaLiquida = f.faturamentoBruto - (f.descontos ?? 0);
+  const lucroBruto = receitaLiquida - f.cmv;
   const lucroOperacional = lucroBruto - f.taxasShopee - f.marketingAds;
   const lucroLiquido = lucroOperacional - f.dasImposto - f.despesasOperacionais;
   const margemPercentual = f.faturamentoBruto > 0 ? (lucroLiquido / f.faturamentoBruto) * 100 : 0;

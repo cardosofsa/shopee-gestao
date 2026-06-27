@@ -92,6 +92,7 @@ export interface Tarefa {
 export interface HistoricoMensal {
   mesAno: string;
   faturamentoBruto: number;
+  descontos?: number;
   pedidosQtd: number;
   ticketMedio: number;
   unidadesVendidas: number;

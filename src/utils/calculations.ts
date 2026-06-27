@@ -116,29 +116,36 @@ export function getStatusEstoque(
   return 'Estoque Estável';
 }
 
-export function getKPIsMes(pedidos: Pedido[], mes?: string) {
+export function getKPIsMes(pedidos: Pedido[], mes?: string, despesasExternas = 0) {
   const agora = mes || new Date().toISOString().slice(0, 7);
   const doMes = pedidos.filter(
     (p) => p.data.startsWith(agora) && (p.status === 'Concluído' || p.status === 'Enviado')
   );
   const faturamento = doMes.reduce((s, p) => s + p.receita, 0);
+  const descontos = doMes.reduce((s, p) => s + p.desconto, 0);
   const pedidosMes = doMes.length;
+  // lucroOp já desconta custo, taxaShopee, dasImposto e adsMarketing de cada pedido
   const lucroOp = doMes.reduce((s, p) => s + p.lucroOperacional, 0);
   const ticket = pedidosMes > 0 ? faturamento / pedidosMes : 0;
   const das = doMes.reduce((s, p) => s + p.dasImposto, 0);
   const custoTotal = doMes.reduce((s, p) => s + p.custoTotal, 0);
   const adsTotal = doMes.reduce((s, p) => s + p.adsMarketing, 0);
+  // margem calculada sobre receita bruta; lucroOp já inclui todas as deduções por pedido
   const margem = faturamento > 0 ? (lucroOp / faturamento) * 100 : 0;
   const roi = custoTotal > 0 ? (lucroOp / custoTotal) * 100 : 0;
   const roas = adsTotal > 0 ? faturamento / adsTotal : 0;
+  // lucroLiquido = lucroOp (DAS já em pedido.lucroOperacional) menos despesas externas do mês
+  const lucroLiquido = lucroOp - despesasExternas;
   return {
     faturamento,
+    descontos,
     pedidosMes,
     lucroOp,
     ticket,
-    lucroLiquido: lucroOp - das,
+    lucroLiquido,
     margem,
     custoTotal,
+    das,
     adsTotal,
     roi,
     roas,

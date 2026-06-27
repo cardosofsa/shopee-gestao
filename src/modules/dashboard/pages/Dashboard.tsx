@@ -149,7 +149,8 @@ function QuickActionModal({
         observacoes: '',
       });
     } else if (action === 'venda') {
-      const lucro = form.receita - produto.custoUnitario;
+      const custoTotal = produto.custoUnitario * form.qtd;
+      const lucroOperacional = form.receita - custoTotal;
       onSaveVenda({
         id: crypto.randomUUID(),
         numeroPedido: form.numeroPedido || `MANUAL-${Date.now()}`,
@@ -163,14 +164,13 @@ function QuickActionModal({
         unidadesEstoque: form.qtd,
         receita: form.receita,
         desconto: 0,
-        custoTotal: produto.custoUnitario * form.qtd,
+        custoTotal,
         taxaShopee: 0,
         dasImposto: 0,
         adsMarketing: 0,
-        lucroOperacional: lucro,
-        margemSCustoProduto:
-          produto.custoUnitario > 0 ? (lucro / (produto.custoUnitario * form.qtd)) * 100 : 0,
-        margemSCustoTotal: form.receita > 0 ? (lucro / form.receita) * 100 : 0,
+        lucroOperacional,
+        margemSCustoProduto: custoTotal > 0 ? (lucroOperacional / custoTotal) * 100 : 0,
+        margemSCustoTotal: form.receita > 0 ? (lucroOperacional / form.receita) * 100 : 0,
       });
     } else {
       onSaveTarefa({
@@ -580,10 +580,21 @@ export default function Dashboard() {
   };
 
   const alertas = useAlertas();
-  const kpis = useMemo(() => getKPIsMes(pedidos, mesFiltro), [pedidos, mesFiltro]);
+  const despesasDoMes = useMemo(
+    () => despesas.filter((d) => d.data.startsWith(mesFiltro)).reduce((s, d) => s + d.valor, 0),
+    [despesas, mesFiltro]
+  );
+  const despesasDoMesPrev = useMemo(() => {
+    const prev = getMesAnterior(mesFiltro);
+    return despesas.filter((d) => d.data.startsWith(prev)).reduce((s, d) => s + d.valor, 0);
+  }, [despesas, mesFiltro]);
+  const kpis = useMemo(
+    () => getKPIsMes(pedidos, mesFiltro, despesasDoMes),
+    [pedidos, mesFiltro, despesasDoMes]
+  );
   const kpisPrev = useMemo(
-    () => getKPIsMes(pedidos, getMesAnterior(mesFiltro)),
-    [pedidos, mesFiltro]
+    () => getKPIsMes(pedidos, getMesAnterior(mesFiltro), despesasDoMesPrev),
+    [pedidos, mesFiltro, despesasDoMesPrev]
   );
   const capitalEstoque = useMemo(() => getCapitalEstoque(produtos), [produtos]);
 
@@ -595,10 +606,6 @@ export default function Dashboard() {
   const ranking = useMemo(
     () => getRankingProdutos(pedidos.filter((p) => p.data.startsWith(mesFiltro))),
     [pedidos, mesFiltro]
-  );
-  const despesasDoMes = useMemo(
-    () => despesas.filter((d) => d.data.startsWith(mesFiltro)).reduce((s, d) => s + d.valor, 0),
-    [despesas, mesFiltro]
   );
 
   const chartAnual = useMemo(
@@ -1041,9 +1048,9 @@ export default function Dashboard() {
       {/* KPI Cards — Row 2: Insights */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <InsightCard
-          label="Margem Bruta"
+          label="Margem Líq."
           value={kpis.faturamento > 0 ? fmtPct(kpis.margem) : '—'}
-          description="sobre o faturamento"
+          description="lucro sobre faturamento bruto"
           icon={Percent}
           iconColor="text-slate-400"
         />
