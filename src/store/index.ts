@@ -596,11 +596,37 @@ export const useStore = create<AppState>()(
         if (uid) withRetry(() => dbProdutos.upsert(p, uid), 'produto').catch(syncFail('produto'));
       },
       updateProduto: (sku, data) => {
-        set((s) => ({ produtos: s.produtos.map((p) => (p.sku === sku ? { ...p, ...data } : p)) }));
+        set((s) => {
+          const novoProdutos = s.produtos.map((p) => (p.sku === sku ? { ...p, ...data } : p));
+          if (!('custoUnitario' in data)) return { produtos: novoProdutos };
+          const novoCusto = data.custoUnitario as number;
+          const novosPedidos = s.pedidos.map((p) => {
+            if (p.sku !== sku) return p;
+            const custoTotal = novoCusto * p.unidadesEstoque;
+            const lucroOperacional =
+              p.receita - p.desconto - custoTotal - p.taxaShopee - p.dasImposto - p.adsMarketing;
+            return {
+              ...p,
+              custoTotal,
+              lucroOperacional,
+              margemSCustoProduto: custoTotal > 0 ? (lucroOperacional / custoTotal) * 100 : 0,
+              margemSCustoTotal: p.receita > 0 ? (lucroOperacional / p.receita) * 100 : 0,
+            };
+          });
+          return { produtos: novoProdutos, pedidos: novosPedidos };
+        });
         const uid = get().userId;
         const updated = get().produtos.find((p) => p.sku === sku);
-        if (uid && updated)
+        if (uid && updated) {
           withRetry(() => dbProdutos.upsert(updated, uid), 'produto').catch(syncFail('produto'));
+          if ('custoUnitario' in data) {
+            const pedidosAtualizados = get().pedidos.filter((p) => p.sku === sku);
+            if (pedidosAtualizados.length > 0)
+              withRetry(() => dbPedidos.upsertMany(pedidosAtualizados, uid), 'pedidos').catch(
+                syncFail('pedidos')
+              );
+          }
+        }
       },
       deleteProduto: (sku) => {
         const { pedidos, compras } = get();
