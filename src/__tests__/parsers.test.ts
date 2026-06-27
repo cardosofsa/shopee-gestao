@@ -120,8 +120,29 @@ describe('mapearSKU', () => {
   it('ALF-500 via variant', () => {
     expect(mapearSKU('ALF-500', '')).toEqual({ sku: 'ALF-500', kit: 1 });
   });
+  it('ALF-500-KIT2 → kit 2', () => {
+    expect(mapearSKU('ALF-500-KIT2', '')).toEqual({ sku: 'ALF-500', kit: 2 });
+  });
   it('ALF-118 via variant', () => {
     expect(mapearSKU('ALFAZEMA-118', '')).toEqual({ sku: 'ALF-118', kit: 1 });
+  });
+  it('ALF-118-UN → kit 1', () => {
+    expect(mapearSKU('ALF-118-UN', '')).toEqual({ sku: 'ALF-118', kit: 1 });
+  });
+  it('ALF-118-KIT2 → kit 2', () => {
+    expect(mapearSKU('ALF-118-KIT2', '')).toEqual({ sku: 'ALF-118', kit: 2 });
+  });
+  it('ALF-118-KIT4 → kit 4', () => {
+    expect(mapearSKU('ALF-118-KIT4', '')).toEqual({ sku: 'ALF-118', kit: 4 });
+  });
+  it('ALF-118-KIT8 → kit 8', () => {
+    expect(mapearSKU('ALF-118-KIT8', '')).toEqual({ sku: 'ALF-118', kit: 8 });
+  });
+  it('ALF-118-KIT12 → kit 12', () => {
+    expect(mapearSKU('ALF-118-KIT12', '')).toEqual({ sku: 'ALF-118', kit: 12 });
+  });
+  it('ALF-118-KIT40 → kit 40', () => {
+    expect(mapearSKU('ALF-118-KIT40', '')).toEqual({ sku: 'ALF-118', kit: 40 });
   });
   it('fallback via principal com FITAANTIFURO-BIKE', () => {
     expect(mapearSKU('variante-x', 'FITAANTIFURO-BIKE')).toEqual({ sku: 'FITA-BIKE', kit: 1 });

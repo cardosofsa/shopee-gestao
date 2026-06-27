@@ -11,8 +11,14 @@ export function mapearSKU(variantSku: string, principalSku: string): { sku: stri
   if (s.includes('FITA-PCX') || s.includes('PCX-UN')) return { sku: 'FITA-PCX', kit: 1 };
   if (s.includes('BAINHAC') || s.includes('BAINHA')) return { sku: 'BAINHAC', kit: 1 };
   if (s.includes('CANMAD')) return { sku: 'CANMAD', kit: 1 };
-  if (s.includes('ALF-500')) return { sku: 'ALF-500', kit: 1 };
-  if (s.includes('ALF-118') || s.includes('ALFAZEMA')) return { sku: 'ALF-118', kit: 1 };
+  if (s.includes('ALF-500')) {
+    const m = s.match(/KIT(\d+)/);
+    return { sku: 'ALF-500', kit: m ? parseInt(m[1]) : 1 };
+  }
+  if (s.includes('ALF-118') || s.includes('ALFAZEMA')) {
+    const m = s.match(/KIT(\d+)/);
+    return { sku: 'ALF-118', kit: m ? parseInt(m[1]) : 1 };
+  }
   const kitN = s.match(/KIT(\d+)|(\d+)\s*PARES?|(\d+)\s*UN/);
   const kit = kitN ? parseInt(kitN[1] || kitN[2] || kitN[3]) : 1;
   if (p.includes('FITAANTIFURO-BIKE') || p.includes('FITAANTIFURO_BIKE'))
@@ -22,7 +28,10 @@ export function mapearSKU(variantSku: string, principalSku: string): { sku: stri
   if (p.includes('FITAANTIFURO-PCX') || p.includes('FITAANTIFURO_PCX'))
     return { sku: 'FITA-PCX', kit };
   if (p.includes('FITAANTIFURO') || p.includes('FITA')) return { sku: 'FITA-BIKE', kit };
-  if (p.includes('ALFAZEMA')) return { sku: 'ALF-118', kit: 1 };
+  if (p.includes('ALFAZEMA')) {
+    const m = s.match(/KIT(\d+)/);
+    return { sku: 'ALF-118', kit: m ? parseInt(m[1]) : 1 };
+  }
   if (p.includes('BAINHAC')) return { sku: 'BAINHAC', kit: 1 };
   return { sku: p || s || variantSku, kit: kit || 1 };
 }
