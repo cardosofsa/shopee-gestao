@@ -19,6 +19,10 @@ export interface DREResult {
   margemPercentual: number;
 }
 
+/**
+ * DAS é acumulado de `pedido.dasImposto` (já deduzido por pedido), não recalculado da alíquota.
+ * Hierarquia: faturamentoBruto → descontos → receitaLiquida → lucroBruto → lucroOperacional → lucroLiquido
+ */
 export function computeDRE(pedidos: Pedido[], despesas: Despesa[], mesAno: string): DREResult {
   const doMes = pedidos.filter(
     (p) => p.data.startsWith(mesAno) && (p.status === 'Concluído' || p.status === 'Enviado')

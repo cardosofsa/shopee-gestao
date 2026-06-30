@@ -1,14 +1,16 @@
-# SYSTEM.md — Shopee Gestão (Core Business OS)
+# SYSTEM.md — Core Gestor (Business OS para E-commerce)
 
-Documentação técnica completa do sistema. Gerado em 2026-06-22.
+Documentação técnica completa do sistema. Atualizado em 2026-06-29.
 
 ---
 
 ## 1. Visão Geral
 
-Plataforma SaaS de gestão operacional para vendedores Shopee. Substitui planilhas Excel por um sistema integrado com backend em nuvem, autenticação por usuário e dados isolados por RLS (Row Level Security).
+Plataforma SaaS de gestão operacional para vendedores de e-commerce multi-plataforma (Shopee, Mercado Livre, Shein e outros). Substitui planilhas Excel por um sistema integrado com backend em nuvem, autenticação por usuário e dados isolados por RLS (Row Level Security).
 
-**URL produção:** https://shopee-gestao-drab.vercel.app  
+**Produto:** Core Gestor  
+**URL produção:** https://app.coregestor.com.br  
+**Landing page:** https://coregestor.com.br  
 **Status:** Em produção  
 **Versão:** 0.0.0 (pré-lançamento público)
 
@@ -133,7 +135,7 @@ shopee-gestao/
 │   │       └── SectionHeader.tsx # + PageHeader
 │   │
 │   ├── store/
-│   │   └── index.ts             # Store Zustand (734 linhas) — estado global
+│   │   └── index.ts             # Store Zustand (~1100 linhas) — estado global monolítico
 │   │
 │   ├── lib/
 │   │   ├── supabase.ts          # Singleton do cliente Supabase
@@ -431,12 +433,12 @@ O `lojaDefault` é sempre `configuracoes.lojas[0]` (nunca hardcoded). O UpSeller
 
 ### Cores (Tailwind)
 
-| Token          | Hex       | Uso                                 |
-| -------------- | --------- | ----------------------------------- |
-| `core-green`   | `#18B37A` | Cor primária (CTAs, lucro, sucesso) |
-| `core-green-h` | `#0e9463` | Hover da cor primária               |
-| `core-black`   | `#111111` | Sidebar e elementos escuros         |
-| `shopee-500`   | `#f97316` | Accent Shopee (laranja)             |
+| Token          | Hex       | Uso                                   |
+| -------------- | --------- | ------------------------------------- |
+| `core-green`   | `#18B37A` | Cor primária (CTAs, lucro, sucesso)   |
+| `core-green-h` | `#0e9463` | Hover da cor primária                 |
+| `core-black`   | `#111111` | Sidebar e elementos escuros           |
+| `shopee-500`   | `#f97316` | Accent legado (laranja) — pouco usado |
 
 ### Dark mode
 
@@ -595,15 +597,22 @@ Template público em `.env.example`.
 ## 16. Scripts disponíveis
 
 ```bash
-npm run dev            # Servidor de desenvolvimento (Vite, porta 5173)
-npm run build          # Build de produção (tsc + vite build)
-npm run preview        # Preview do build local
-npm run lint           # ESLint
-npm run test           # Vitest (todos os testes, single run)
-npm run test:watch     # Vitest em modo watch
-npm run test:coverage  # Cobertura de testes
-npm run test:e2e       # Playwright E2E
-npm run test:e2e:ui    # Playwright com UI visual
+npm run dev                # Servidor de desenvolvimento (Vite, porta 5173)
+npm run build              # Build de produção (tsc + vite build)
+npm run preview            # Preview do build local
+npm run lint               # ESLint
+npm run format:check       # Prettier check
+npm run typecheck          # TypeScript check (sem emit)
+npm run test               # Vitest (todos os testes, single run)
+npm run test:watch         # Vitest em modo watch
+npm run test:coverage      # Cobertura de testes
+npm run test:e2e           # Playwright E2E
+npm run test:e2e:ui        # Playwright com UI visual
+npm run checklist          # Checklist IA — padrões obrigatórios
+npm run validate:rls       # Valida políticas RLS no Supabase
+npm run secret-scan        # Scan de secrets no src/ (CI bloqueante)
+npm run secret-scan:bundle # Scan de secrets no dist/ após build
+npm run seed:demo          # Popula dados de demonstração no Supabase
 ```
 
 ---
@@ -658,7 +667,7 @@ npm run test:e2e:ui    # Playwright com UI visual
 
 ### Ferramentas
 
-- **Calculadora** — precificação Shopee: modo simples e avançado, modo reverso
+- **Calculadora** — precificação multi-plataforma: modo simples, avançado e reverso
 - **Precificação** — histórico de precificações salvas
 - **Simulador** — simulação de cenários (aumento de custo, desconto, taxa)
 - **Relatório** — relatório gerencial completo exportável
@@ -683,4 +692,4 @@ npm run test:e2e:ui    # Playwright com UI visual
 
 ---
 
-_Gerado automaticamente com base no código-fonte em 2026-06-22._
+_Atualizado em 2026-06-29. Produto: Core Gestor — Business OS para E-commerce._

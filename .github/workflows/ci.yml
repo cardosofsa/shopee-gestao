@@ -77,13 +77,48 @@ jobs:
           retention-days: 14
 
   # ══════════════════════════════════════════════════════════════
-  # ETAPA 3 — Build (BLOQUEANTE)
+  # ETAPA 3 — Segurança (BLOQUEANTE)
+  # ══════════════════════════════════════════════════════════════
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Dependências vulneráveis (high+critical)
+        run: npm audit --audit-level=high
+      - name: Scan de secrets no código-fonte
+        run: npm run secret-scan
+
+  rls-validation:
+    name: RLS Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Validar políticas RLS
+        run: npm run validate:rls
+
+  # ══════════════════════════════════════════════════════════════
+  # ETAPA 4 — Build (BLOQUEANTE)
   # ══════════════════════════════════════════════════════════════
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [lint, checklist, unit-tests]
+    needs: [lint, checklist, unit-tests, security, rls-validation]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -96,6 +131,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Scan de secrets no bundle
+        run: npm run secret-scan:bundle
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -104,32 +141,12 @@ jobs:
           retention-days: 1
 
   # ══════════════════════════════════════════════════════════════
-  # ETAPA 4 — Validações informativas (NÃO bloqueantes)
-  # Promover a bloqueante conforme estabilidade aumentar.
-  # ══════════════════════════════════════════════════════════════
-  rls-validation:
-    name: RLS Validation (informativo)
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    needs: lint
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
-      - name: Validar políticas RLS
-        run: npm run validate:rls
-
-  # ══════════════════════════════════════════════════════════════
   # GATE FINAL — só verde se todos os jobs bloqueantes passaram
   # ══════════════════════════════════════════════════════════════
   gate:
     name: Pipeline OK
     runs-on: ubuntu-latest
-    needs: [lint, checklist, unit-tests, build]
+    needs: [lint, checklist, unit-tests, security, rls-validation, build]
     if: always()
     steps:
       - name: Verificar status dos jobs bloqueantes
@@ -137,6 +154,8 @@ jobs:
           if [[ "${{ needs.lint.result }}" != "success" ||
                 "${{ needs.checklist.result }}" != "success" ||
                 "${{ needs.unit-tests.result }}" != "success" ||
+                "${{ needs.security.result }}" != "success" ||
+                "${{ needs.rls-validation.result }}" != "success" ||
                 "${{ needs.build.result }}" != "success" ]]; then
             echo "Um ou mais jobs bloqueantes falharam."
             exit 1

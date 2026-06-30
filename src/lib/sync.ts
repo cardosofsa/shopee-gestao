@@ -69,6 +69,13 @@ export function notifySyncError(message: string) {
   pushNotification(message, 'error');
 }
 
+export function syncFail(label: string) {
+  return (err: unknown) => {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    notifySyncError(`Falha ao salvar ${label}: ${msg}`);
+  };
+}
+
 // ─── Limit reached listener ───────────────────────────────────────────────────
 
 type LimitListener = (message: string, type: 'warning' | 'error', showUpgrade: boolean) => void;

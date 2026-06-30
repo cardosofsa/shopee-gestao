@@ -20,6 +20,8 @@
     "test:visual": "playwright test e2e/visual.test.ts",
     "checklist": "node scripts/ai-checklist.mjs",
     "validate:rls": "node scripts/validate-rls.mjs",
+    "secret-scan": "node scripts/secret-scan.mjs",
+    "secret-scan:bundle": "node scripts/secret-scan.mjs dist",
     "seed:demo": "node scripts/seed-demo.mjs",
     "prepare": "simple-git-hooks"
   },

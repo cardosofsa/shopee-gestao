@@ -317,7 +317,7 @@ export default function Landing() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-core-green/10 border border-core-green/20 rounded-full mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-core-green animate-pulse" />
-            <span className="text-xs font-semibold text-core-green tracking-wide">Grátis para começar · Sem cartão</span>
+            <span className="text-xs font-semibold text-core-green tracking-wide">Shopee · Mercado Livre · e mais · Grátis para começar</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-semibold text-core-black tracking-tight leading-[1.1] mb-5">
@@ -325,7 +325,7 @@ export default function Landing() {
             <span className="text-core-green">Sua empresa merece um sistema.</span>
           </h1>
           <p className="text-lg text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
-            Controle pedidos, estoque, finanças e tarefas — tudo em um único painel, atualizado em tempo real.
+            Controle pedidos, estoque, finanças e equipe de todas as suas lojas — Shopee, Mercado Livre, Shein e mais — em um único painel, atualizado em tempo real.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
@@ -402,7 +402,7 @@ export default function Landing() {
           </h2>
           <div className="grid sm:grid-cols-3 gap-6 mb-14">
             {[
-              { icon: Upload,     step: '01', title: 'Importe seus pedidos',      desc: 'Baixe o relatório de pedidos e importe com 1 clique. Compatível com múltiplos formatos.' },
+              { icon: Upload,     step: '01', title: 'Importe seus pedidos',      desc: 'Baixe o relatório de pedidos da sua plataforma — Shopee, Mercado Livre ou outra — e importe com 1 clique.' },
               { icon: Monitor,    step: '02', title: 'Veja tudo em tempo real',   desc: 'Estoque, DRE, KPIs e ranking de produtos são calculados automaticamente a cada importação.' },
               { icon: TrendingUp, step: '03', title: 'Tome decisões com dados',   desc: 'Curva ABC, calculadora de preço e relatório mensal te dizem exatamente onde focar.' },
             ].map((s) => {

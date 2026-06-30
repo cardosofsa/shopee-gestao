@@ -26,7 +26,7 @@ export function calcularAds(receita: number, percentual = 0.02): number {
   return receita * percentual;
 }
 
-// For pricing calculator
+/** Denominador ≤ 0 significa precificação matematicamente inviável — retorna zeros em vez de lançar. */
 export function calcularPrecoIdeal(params: {
   custo: number;
   margemDesejada: number; // decimal, e.g. 0.30
@@ -116,6 +116,9 @@ export function getStatusEstoque(
   return 'Estoque Estável';
 }
 
+/**
+ * `lucroLiquido = lucroOp − despesasExternas`. DAS NÃO é subtraído aqui — já está em `pedido.lucroOperacional`.
+ */
 export function getKPIsMes(pedidos: Pedido[], mes?: string, despesasExternas = 0) {
   const agora = mes || new Date().toISOString().slice(0, 7);
   const doMes = pedidos.filter(

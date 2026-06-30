@@ -47,7 +47,7 @@ export function buildICS(tarefas: Tarefa[]): string {
     .map((t) => {
       const lines = [
         'BEGIN:VEVENT',
-        `UID:${t.id}@shopee-gestao`,
+        `UID:${t.id}@coregestor`,
         `DTSTAMP:${now}`,
         `DTSTART;VALUE=DATE:${toICSDate(t.dataVencimento!)}`,
         `DTEND;VALUE=DATE:${nextDay(t.dataVencimento!)}`,
@@ -63,10 +63,10 @@ export function buildICS(tarefas: Tarefa[]): string {
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Shopee Gestão//PT',
+    'PRODID:-//Core Gestor//PT',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Shopee Gestão — Tarefas',
+    'X-WR-CALNAME:Core Gestor — Tarefas',
     'X-WR-TIMEZONE:America/Sao_Paulo',
     ...events,
     'END:VCALENDAR',
@@ -140,7 +140,7 @@ export async function pushToGoogleCalendar(
             description: t.descricao || undefined,
             start: { date: t.dataVencimento },
             end: { date: nextDayISO(t.dataVencimento!) },
-            source: { title: 'Shopee Gestão', url: window.location.origin },
+            source: { title: 'Core Gestor', url: window.location.origin },
           }),
         }
       );

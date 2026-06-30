@@ -9,9 +9,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'CORE — Business OS',
-        short_name: 'CORE',
-        description: 'Gerencie pedidos, estoque e finanças do seu negócio.',
+        name: 'Core Gestor — Business OS',
+        short_name: 'Core Gestor',
+        description:
+          'Business OS para vendedores de e-commerce. Gerencie pedidos, estoque, DRE e equipe de múltiplas lojas em um único lugar.',
         theme_color: '#111111',
         background_color: '#111111',
         display: 'standalone',
