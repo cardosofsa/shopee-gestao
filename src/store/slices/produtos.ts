@@ -1,7 +1,10 @@
 import type { StoreApi } from 'zustand';
 
 import { dbAjustes, dbCompras, dbPedidos, dbProdutos } from '../../lib/db';
+import { queryClient } from '../../lib/queryClient';
 import { notifyLimitReached, notifySyncError, syncFail, withRetry } from '../../lib/sync';
+
+const qKey = (uid: string | null) => ['pedidos', uid] as const;
 import type { AjusteEstoque, Produto } from '../../types';
 import type { AppState } from '../types';
 
@@ -63,9 +66,9 @@ export function createProdutosSlice(set: SetFn, get: GetFn) {
         if ('custoUnitario' in data) {
           const pedidosAtualizados = get().pedidos.filter((p) => p.sku === sku);
           if (pedidosAtualizados.length > 0)
-            withRetry(() => dbPedidos.upsertMany(pedidosAtualizados, uid), 'pedidos').catch(
-              syncFail('pedidos')
-            );
+            withRetry(() => dbPedidos.upsertMany(pedidosAtualizados, uid), 'pedidos')
+              .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+              .catch(syncFail('pedidos'));
         }
       }
     },
@@ -87,7 +90,9 @@ export function createProdutosSlice(set: SetFn, get: GetFn) {
           ...pedidosIds.map((id) => withRetry(() => dbPedidos.delete(id, uid), 'pedido')),
           ...comprasIds.map((id) => withRetry(() => dbCompras.delete(id, uid), 'compra')),
         ];
-        Promise.all(ops).catch(syncFail('produto'));
+        Promise.all(ops)
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(syncFail('produto'));
       }
     },
 

@@ -13,6 +13,7 @@ import { AdminProvider } from './contexts/AdminContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
 import { queryClient } from './lib/queryClient';
+import Convite from './pages/Convite';
 import Login from './pages/Login';
 import Lancamento from './pages/public/Lancamento';
 import Landing from './pages/public/Landing';
@@ -231,6 +232,7 @@ export default function App() {
               <Routes>
                 {/* Páginas públicas fixas */}
                 <Route path="/lancamento" element={<Lancamento />} />
+                <Route path="/convite" element={<Convite />} />
                 <Route path="/login" element={<LoginOrRedirect />} />
                 <Route path="/registro" element={<RegistroOrRedirect />} />
 

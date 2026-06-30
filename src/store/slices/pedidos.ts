@@ -1,12 +1,15 @@
 import type { StoreApi } from 'zustand';
 
 import { dbPedidos, dbProdutos } from '../../lib/db';
+import { queryClient } from '../../lib/queryClient';
 import { notifyLimitReached, notifySyncError, withRetry } from '../../lib/sync';
 import type { Pedido } from '../../types';
 import type { AppState } from '../types';
 
 type SetFn = StoreApi<AppState>['setState'];
 type GetFn = StoreApi<AppState>['getState'];
+
+const qKey = (uid: string | null) => ['pedidos', uid] as const;
 
 export function createPedidosSlice(set: SetFn, get: GetFn) {
   return {
@@ -36,10 +39,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: [p, ...s.pedidos] }));
       const uid = get().userId;
       if (uid)
-        withRetry(() => dbPedidos.upsert(p, uid), 'pedido').catch(() => {
-          set({ pedidos: prev });
-          notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.');
-        });
+        withRetry(() => dbPedidos.upsert(p, uid), 'pedido')
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prev });
+            notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.');
+          });
     },
 
     addPedidos: (ps: Pedido[]) => {
@@ -47,10 +52,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: [...ps, ...s.pedidos] }));
       const uid = get().userId;
       if (uid)
-        withRetry(() => dbPedidos.upsertMany(ps, uid), 'pedidos').catch(() => {
-          set({ pedidos: prev });
-          notifySyncError('Falha ao importar pedidos. Revertendo — tente novamente.');
-        });
+        withRetry(() => dbPedidos.upsertMany(ps, uid), 'pedidos')
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prev });
+            notifySyncError('Falha ao importar pedidos. Revertendo — tente novamente.');
+          });
     },
 
     updatePedido: (id: string, updated: Pedido) => {
@@ -71,10 +78,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: s.pedidos.map((p) => (p.id === id ? updated : p)) }));
       const uid = get().userId;
       if (uid)
-        withRetry(() => dbPedidos.upsert(updated, uid), 'pedido').catch(() => {
-          set({ pedidos: prevPedidos, produtos: prevProdutos });
-          notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.');
-        });
+        withRetry(() => dbPedidos.upsert(updated, uid), 'pedido')
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prevPedidos, produtos: prevProdutos });
+            notifySyncError('Falha ao salvar pedido. Revertendo — tente novamente.');
+          });
     },
 
     updatePedidoStatus: (id: string, status: Pedido['status']) => {
@@ -94,10 +103,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: s.pedidos.map((p) => (p.id === id ? { ...p, status } : p)) }));
       const uid = get().userId;
       if (uid)
-        withRetry(() => dbPedidos.updateStatus(id, status, uid), 'status do pedido').catch(() => {
-          set({ pedidos: prevPedidos, produtos: prevProdutos });
-          notifySyncError('Falha ao atualizar status. Revertendo — tente novamente.');
-        });
+        withRetry(() => dbPedidos.updateStatus(id, status, uid), 'status do pedido')
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prevPedidos, produtos: prevProdutos });
+            notifySyncError('Falha ao atualizar status. Revertendo — tente novamente.');
+          });
     },
 
     updatePedidosStatus: (ids: string[], status: Pedido['status']) => {
@@ -132,10 +143,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
               ? withRetry(() => dbProdutos.updateEstoque(sku, prod.estoqueAtual, uid), 'estoque')
               : Promise.resolve();
           }),
-        ]).catch(() => {
-          set({ pedidos: prevPedidos, produtos: prevProdutos });
-          notifySyncError('Falha ao atualizar status em lote. Revertendo — tente novamente.');
-        });
+        ])
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prevPedidos, produtos: prevProdutos });
+            notifySyncError('Falha ao atualizar status em lote. Revertendo — tente novamente.');
+          });
       }
     },
 
@@ -144,10 +157,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: s.pedidos.filter((p) => p.id !== id) }));
       const uid = get().userId;
       if (uid)
-        withRetry(() => dbPedidos.delete(id, uid), 'pedido').catch(() => {
-          set({ pedidos: prev });
-          notifySyncError('Falha ao excluir pedido. Revertendo — tente novamente.');
-        });
+        withRetry(() => dbPedidos.delete(id, uid), 'pedido')
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
+            set({ pedidos: prev });
+            notifySyncError('Falha ao excluir pedido. Revertendo — tente novamente.');
+          });
     },
 
     deletePedidos: (ids: string[]) => {
@@ -156,12 +171,12 @@ export function createPedidosSlice(set: SetFn, get: GetFn) {
       set((s) => ({ pedidos: s.pedidos.filter((p) => !idsSet.has(p.id)) }));
       const uid = get().userId;
       if (uid)
-        Promise.all(ids.map((id) => withRetry(() => dbPedidos.delete(id, uid), 'pedido'))).catch(
-          () => {
+        Promise.all(ids.map((id) => withRetry(() => dbPedidos.delete(id, uid), 'pedido')))
+          .then(() => queryClient.invalidateQueries({ queryKey: qKey(uid) }))
+          .catch(() => {
             set({ pedidos: prev });
             notifySyncError('Falha ao excluir pedidos. Revertendo — tente novamente.');
-          }
-        );
+          });
     },
   };
 }

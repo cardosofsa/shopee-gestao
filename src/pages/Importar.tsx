@@ -10,12 +10,14 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '../components/Toast';
 import type { ImportFormato } from '../import/parsers';
 import { parseImportRows } from '../import/parsers';
 import { useStore } from '../store';
 import type { Pedido } from '../types';
+import { getKPIsMes } from '../utils/calculations';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -212,6 +214,7 @@ function PreviewTable({ pedidos }: { pedidos: Pedido[] }) {
 
 export default function Importar() {
   const toast = useToast();
+  const navigate = useNavigate();
   const pedidosAll = useStore((s) => s.pedidos);
   const produtos = useStore((s) => s.produtos);
   const configuracoes = useStore((s) => s.configuracoes);
@@ -301,11 +304,23 @@ export default function Importar() {
     saveHistory(updated);
     setHistory(updated);
 
-    setLastDone({ novos: final.length, duplicados, formato });
+    const mes = new Date().toISOString().slice(0, 7);
+    const kpis = getKPIsMes([...final, ...pedidosAll], mes);
+
     setPending(null);
-    toast(`${final.length} pedido(s) importado(s) com sucesso!`, 'success');
     if (duplicados > 0) toast(`${duplicados} duplicado(s) ignorado(s).`, 'info');
-  }, [pending, addPedidos, history, toast]);
+    navigate('/', {
+      state: {
+        importInsight: {
+          novos: final.length,
+          lucroLiq: kpis.lucroLiquido,
+          faturamento: kpis.faturamento,
+          pedidosMes: kpis.pedidosMes,
+          mes,
+        },
+      },
+    });
+  }, [pending, addPedidos, pedidosAll, history, toast, navigate]);
 
   const handleReset = () => {
     setPending(null);

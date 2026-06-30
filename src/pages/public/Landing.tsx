@@ -274,7 +274,7 @@ export default function Landing() {
     { q: 'Preciso instalar alguma coisa?',     a: 'Não. O Core roda 100% no navegador, em qualquer dispositivo. Basta criar sua conta e começar.' },
     { q: 'Meus dados ficam seguros?',          a: 'Sim. Hospedados no Supabase (infraestrutura AWS), criptografados e isolados por conta. Nunca compartilhamos.' },
     { q: 'Funciona para mais de uma loja?',    a: 'Sim. Você cadastra quantas lojas quiser e filtra por loja em todo o painel.' },
-    { q: 'Como importo meus pedidos?',         a: 'Com o arquivo CSV gerado pelo painel de pedidos da sua plataforma. Importa em 1 clique, sem configuração.' },
+    { q: 'Quais plataformas são suportadas?',   a: 'Shopee (relatório nativo do Seller Center), UpSeller e planilhas genéricas. Suporte a Mercado Livre e outros está em desenvolvimento.' },
     { q: 'Posso cancelar a qualquer momento?', a: 'Sim, sem multa, sem burocracia. Você pode cancelar ou fazer downgrade quando quiser.' },
     { q: 'Qual a diferença dos planos?',       a: 'O plano gratuito cobre até 200 pedidos/mês. Planos pagos desbloqueiam mais pedidos, exportação XLSX, relatórios PDF e API.' },
   ];
@@ -317,7 +317,7 @@ export default function Landing() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-core-green/10 border border-core-green/20 rounded-full mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-core-green animate-pulse" />
-            <span className="text-xs font-semibold text-core-green tracking-wide">Shopee · Mercado Livre · e mais · Grátis para começar</span>
+            <span className="text-xs font-semibold text-core-green tracking-wide">Shopee · UpSeller · Outros formatos · Grátis para começar</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-semibold text-core-black tracking-tight leading-[1.1] mb-5">
@@ -325,7 +325,7 @@ export default function Landing() {
             <span className="text-core-green">Sua empresa merece um sistema.</span>
           </h1>
           <p className="text-lg text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
-            Controle pedidos, estoque, finanças e equipe de todas as suas lojas — Shopee, Mercado Livre, Shein e mais — em um único painel, atualizado em tempo real.
+            Saiba quanto você realmente ganha em cada pedido, SKU e campanha — com DAS, taxas e custo de produto já descontados. Importe em segundos e tome decisões com dados reais.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
@@ -402,7 +402,7 @@ export default function Landing() {
           </h2>
           <div className="grid sm:grid-cols-3 gap-6 mb-14">
             {[
-              { icon: Upload,     step: '01', title: 'Importe seus pedidos',      desc: 'Baixe o relatório de pedidos da sua plataforma — Shopee, Mercado Livre ou outra — e importe com 1 clique.' },
+              { icon: Upload,     step: '01', title: 'Importe seus pedidos',      desc: 'Baixe o relatório CSV do Seller Center — Shopee nativo, UpSeller e planilha genérica suportados. Importa em 1 clique.' },
               { icon: Monitor,    step: '02', title: 'Veja tudo em tempo real',   desc: 'Estoque, DRE, KPIs e ranking de produtos são calculados automaticamente a cada importação.' },
               { icon: TrendingUp, step: '03', title: 'Tome decisões com dados',   desc: 'Curva ABC, calculadora de preço e relatório mensal te dizem exatamente onde focar.' },
             ].map((s) => {

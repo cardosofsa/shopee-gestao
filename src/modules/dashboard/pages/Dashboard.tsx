@@ -27,8 +27,8 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Area,
   AreaChart,
@@ -533,8 +533,17 @@ function EmptyRanking({ mesLabel }: { mesLabel: string }) {
   );
 }
 
+interface ImportInsight {
+  novos: number;
+  lucroLiq: number;
+  faturamento: number;
+  pedidosMes: number;
+  mes: string;
+}
+
 export default function Dashboard() {
   const toast = useToast();
+  const location = useLocation();
   const pedidosAll = useStore((s) => s.pedidos);
   const produtosAll = useStore((s) => s.produtos);
   const despesas = useStore((s) => s.despesas);
@@ -562,6 +571,16 @@ export default function Dashboard() {
   const [quickAction, setQuickAction] = useState<{ produto: Produto; action: QuickAction } | null>(
     null
   );
+  const [importInsight, setImportInsight] = useState<ImportInsight | null>(
+    (location.state as { importInsight?: ImportInsight } | null)?.importInsight ?? null
+  );
+  const clearedState = useRef(false);
+  useEffect(() => {
+    if (importInsight && !clearedState.current) {
+      clearedState.current = true;
+      window.history.replaceState({}, '');
+    }
+  }, [importInsight]);
 
   const mesAtual = new Date().toISOString().slice(0, 7);
   const isCurrentMonth = mesFiltro === mesAtual;
@@ -782,6 +801,40 @@ export default function Dashboard() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <Onboarding />
+
+      {/* Banner pós-import */}
+      {importInsight && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-core-green/10 border border-core-green/20">
+          <TrendingUp size={18} className="text-core-green mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              {importInsight.novos} pedido{importInsight.novos !== 1 ? 's' : ''} importado
+              {importInsight.novos !== 1 ? 's' : ''} com sucesso!
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Faturamento do mês:{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-300">
+                {fmt(importInsight.faturamento)}
+              </span>{' '}
+              · Lucro líquido:{' '}
+              <span
+                className={`font-semibold ${importInsight.lucroLiq >= 0 ? 'text-core-green' : 'text-red-500'}`}
+              >
+                {fmt(importInsight.lucroLiq)}
+              </span>{' '}
+              · {importInsight.pedidosMes} pedido{importInsight.pedidosMes !== 1 ? 's' : ''} no mês
+            </p>
+          </div>
+          <button
+            onClick={() => setImportInsight(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 shrink-0"
+            aria-label="Fechar"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Header — greeting + today KPIs */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="w-11 h-11 rounded-2xl bg-amber-400/20 flex items-center justify-center shrink-0">
